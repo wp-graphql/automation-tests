@@ -8,9 +8,8 @@ When a pull request is merged to the `develop` branch, this workflow will automa
 
 ## Workflow Triggers
 
-- Pull request merged to `develop` branch
+- Pull request labeled with 'ready-for-changeset'
 - Manual trigger (for testing or manual changeset creation)
-- Optional: Pull request approved or labeled by an admin
 
 ## Implementation Options
 
@@ -70,7 +69,7 @@ The explicit `breaking` field in the changeset takes precedence over automatic d
 
 ## Workflow Steps
 
-1. Detect when a PR is merged to `develop`
+1. Detect when a PR is labeled with 'ready-for-changeset'
 2. Extract metadata from the PR:
    - PR title
    - PR number
@@ -81,26 +80,30 @@ The explicit `breaking` field in the changeset takes precedence over automatic d
 3. Generate changeset file with a unique name (e.g., `{timestamp}-{pr-number}.md`)
 4. Store the changeset in a `.changesets` directory
 5. Commit the changeset file to the `develop` branch
+6. Remove the 'ready-for-changeset' label to prevent duplicate runs
 
 ## GitHub Action Implementation
 
 ```yaml
 name: Generate Changeset
 
+# This workflow can be triggered in two ways:
+# 1. By adding the 'ready-for-changeset' label to a pull request
+# 2. Manually via the GitHub Actions UI using the workflow_dispatch event
+
 on:
   pull_request:
-    types: [closed]
-    branches:
-      - develop
+    types: [labeled]
   workflow_dispatch:
     inputs:
       pr_number:
         description: 'PR number to generate changeset for'
         required: true
-      
+        type: string
+
 jobs:
   generate-changeset:
-    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'pull_request' && github.event.label.name == 'ready-for-changeset') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -108,44 +111,40 @@ jobs:
         with:
           fetch-depth: 0
           ref: develop
+          token: ${{ secrets.REPO_PAT }}
           
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '16'
           
-      # Option 1: Using changesets/cli
       - name: Install dependencies
-        run: npm install @changesets/cli
-        
-      - name: Generate changeset
-        run: |
-          # Custom script to extract PR info and generate changeset
-          # This would be implemented as a separate script
+        run: npm ci
           
-      # Option 2: Custom implementation
       - name: Extract PR information
         id: pr_info
         run: |
-          # Extract PR title, number, author, etc.
-          # Set outputs for use in next steps
+          # Extract PR information code here
           
-      - name: Generate changeset file
+      - name: Generate changeset
         run: |
-          # Generate changeset file based on PR info
+          # Generate changeset code here
           
       - name: Commit changeset
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          commit_message: "chore: add changeset for PR #${{ github.event.pull_request.number }}"
+          commit_message: "chore: add changeset for PR #${{ steps.pr_info.outputs.pr_number }}"
           file_pattern: ".changesets/*.md"
-```
+          
+      - name: Remove label
+        if: github.event_name == 'pull_request'
+        run: |
+          # Remove label code here
 
 ## Next Steps and Considerations
 
-- Decide between @changesets/cli or custom implementation
-- Create directory structure for storing changesets
-- Implement script for extracting PR information
+- Create the 'ready-for-changeset' label in the repository
+- Set up a Personal Access Token (PAT) with repo scope as a repository secret named `REPO_PAT`
 - Test workflow with sample PRs
 - Consider how to handle merge conflicts
 - Plan integration with the release workflow 

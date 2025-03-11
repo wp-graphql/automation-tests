@@ -17,6 +17,9 @@
 
 ### GitHub Workflows
 - Modified `generate-changeset.yml` to automatically create changesets from PRs
+  - **Enhanced trigger mechanism** using a 'ready-for-changeset' label instead of PR merge
+  - **Improved permissions handling** with Personal Access Token for better cross-fork support
+  - **Automatic label removal** to prevent duplicate changeset generation
 - Improved `release-management.yml` to automate version bumping, changelog updates, and release PRs
   - **Enhanced with auto-detection** of version bump type based on changeset analysis
   - **Simplified workflow** by leveraging the auto-detection feature in the bump-version script

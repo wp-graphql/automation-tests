@@ -11,7 +11,7 @@ This repository serves as a testing ground for GitHub Actions workflows before i
 The following workflows are implemented:
 
 - **[Semantic PR Titles](.github/workflows/semantic-pr-titles.yml)**: Ensures pull request titles follow semantic conventions (feat, fix, etc.)
-- **[Changeset Generation](.github/workflows/generate-changeset.yml)**: Generates changesets when PRs are merged to develop
+- **[Changeset Generation](.github/workflows/generate-changeset.yml)**: Generates changesets when PRs are labeled with 'ready-for-changeset'
 - **[Release Management](.github/workflows/release-management.yml)**: Collects changesets and prepares releases
 - **[Create Tag](.github/workflows/create-tag.yml)**: Creates a tag when a release PR is merged to main
 - **[Deployment](.github/workflows/deploy.yml)**: Deploys plugin to WordPress.org and creates GitHub releases
@@ -63,11 +63,12 @@ Detailed documentation for each workflow can be found in the [.github/workflows]
 
 1. Contributors open pull requests from forks to the `develop` branch
 2. PR titles are validated using the Semantic PR Titles workflow
-3. When a PR is merged, the Changeset Generation workflow creates a changeset file
-4. Changesets accumulate in the `develop` branch
-5. The Release Management workflow collects changesets and creates a release PR
-6. When the release PR is merged to `main`, the Create Tag workflow creates a tag
-7. The Deployment workflow is triggered by the tag and deploys the plugin to WordPress.org and creates a GitHub release
+3. When a PR is ready, the 'ready-for-changeset' label is added to trigger the Changeset Generation workflow
+4. The workflow creates a changeset file and commits it to the `develop` branch
+5. Changesets accumulate in the `develop` branch
+6. The Release Management workflow collects changesets and creates a release PR
+7. When the release PR is merged to `main`, the Create Tag workflow creates a tag
+8. The Deployment workflow is triggered by the tag and deploys the plugin to WordPress.org and creates a GitHub release
 
 ## Directory Structure
 
