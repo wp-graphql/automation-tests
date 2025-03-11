@@ -111,13 +111,21 @@ jobs:
       - name: Generate temporary changelog
         id: changelog
         run: |
-          # Generate a temporary changelog to use in the PR description
-          CHANGELOG=$(npm run changeset:analyze -- --format=markdown)
-          # Escape newlines for GitHub Actions
-          CHANGELOG="${CHANGELOG//'%'/'%25'}"
-          CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
-          CHANGELOG="${CHANGELOG//$'\r'/'%0D'}"
-          echo "content=${CHANGELOG}" >> $GITHUB_OUTPUT
+          # Create a temporary file to store the changelog
+          TEMP_FILE=$(mktemp)
+          
+          # Run the analyze command and capture the output
+          npm run changeset:analyze -- --format=markdown > $TEMP_FILE
+          
+          # Read the file content, skipping the npm script output lines
+          CHANGELOG=$(grep -v "^>" $TEMP_FILE | grep -v "^automation-tests" | grep -v "^$" | tr -d '\r')
+          
+          # Store the changelog in a file for use in the next steps
+          echo "$CHANGELOG" > changelog_content.txt
+          
+          # Output the changelog for debugging
+          echo "Generated changelog:"
+          cat changelog_content.txt
           
       - name: Check for existing release PR
         id: check_pr
@@ -149,13 +157,16 @@ jobs:
           
           PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
           
+          # Read the changelog content
+          CHANGELOG=$(cat changelog_content.txt)
+          
           # Update the PR
           curl -X PATCH \
             -H "Authorization: token ${{ secrets.REPO_PAT }}" \
             -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}" \
             -d "{
-              \"body\": \"## Upcoming Changes\n\n${{ steps.changelog.outputs.content }}\n\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch.\"
+              \"body\": \"## Upcoming Changes\\n\\n${CHANGELOG}\\n\\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch.\"
             }"
             
           echo "Updated existing release PR #${PR_NUMBER} with latest changelog"
@@ -163,6 +174,9 @@ jobs:
       - name: Create new release PR
         if: steps.check_pr.outputs.exists == 'false'
         run: |
+          # Read the changelog content
+          CHANGELOG=$(cat changelog_content.txt)
+          
           # Create a new PR from develop to main
           RESPONSE=$(curl -X POST \
             -H "Authorization: token ${{ secrets.REPO_PAT }}" \
@@ -172,7 +186,7 @@ jobs:
               \"title\": \"release: next version 📦\",
               \"head\": \"develop\",
               \"base\": \"main\",
-              \"body\": \"## Upcoming Changes\n\n${{ steps.changelog.outputs.content }}\n\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch.\"
+              \"body\": \"## Upcoming Changes\\n\\n${CHANGELOG}\\n\\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch.\"
             }")
             
           PR_NUMBER=$(echo "$RESPONSE" | jq -r '.number')
