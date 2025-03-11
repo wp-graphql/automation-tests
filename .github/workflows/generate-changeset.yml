@@ -107,3 +107,73 @@ jobs:
             -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
             -d '{"body":"✅ Changeset generated automatically after merge"}'
+            
+      - name: Generate temporary changelog
+        id: changelog
+        run: |
+          # Generate a temporary changelog to use in the PR description
+          CHANGELOG=$(npm run changeset:analyze -- --format=markdown)
+          # Escape newlines for GitHub Actions
+          CHANGELOG="${CHANGELOG//'%'/'%25'}"
+          CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
+          CHANGELOG="${CHANGELOG//$'\r'/'%0D'}"
+          echo "content=${CHANGELOG}" >> $GITHUB_OUTPUT
+          
+      - name: Check for existing release PR
+        id: check_pr
+        run: |
+          # Check if there's already a PR from develop to main
+          PR_LIST=$(curl -s -H "Authorization: token ${{ secrets.REPO_PAT }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls?state=open&head=${{ github.repository_owner }}:develop&base=main")
+          
+          PR_COUNT=$(echo "$PR_LIST" | jq length)
+          
+          if [[ "$PR_COUNT" -gt 0 ]]; then
+            PR_NUMBER=$(echo "$PR_LIST" | jq -r '.[0].number')
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "number=${PR_NUMBER}" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Update existing release PR
+        if: steps.check_pr.outputs.exists == 'true'
+        run: |
+          # Update the PR body with the latest changelog
+          PR_NUMBER="${{ steps.check_pr.outputs.number }}"
+          
+          # Get current PR data
+          PR_DATA=$(curl -s -H "Authorization: token ${{ secrets.REPO_PAT }}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}")
+          
+          PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
+          
+          # Update the PR
+          curl -X PATCH \
+            -H "Authorization: token ${{ secrets.REPO_PAT }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}" \
+            -d "{
+              \"body\": \"## Upcoming Changes\n\n${{ steps.changelog.outputs.content }}\n\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch.\"
+            }"
+            
+          echo "Updated existing release PR #${PR_NUMBER} with latest changelog"
+          
+      - name: Create new release PR
+        if: steps.check_pr.outputs.exists == 'false'
+        run: |
+          # Create a new PR from develop to main
+          RESPONSE=$(curl -X POST \
+            -H "Authorization: token ${{ secrets.REPO_PAT }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls" \
+            -d "{
+              \"title\": \"release: next version 📦\",
+              \"head\": \"develop\",
+              \"base\": \"main\",
+              \"body\": \"## Upcoming Changes\n\n${{ steps.changelog.outputs.content }}\n\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch.\"
+            }")
+            
+          PR_NUMBER=$(echo "$RESPONSE" | jq -r '.number')
+          echo "Created new release PR #${PR_NUMBER} with initial changelog"
