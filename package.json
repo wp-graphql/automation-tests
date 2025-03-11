@@ -1,0 +1,40 @@
+{
+  "name": "automation-tests",
+  "version": "1.0.0",
+  "description": "A plugin to test automation workflows",
+  "main": "index.js",
+  "scripts": {
+    "changeset:generate": "node scripts/generate-changeset.js",
+    "changeset:analyze": "node scripts/analyze-changesets.js",
+    "version:bump": "node scripts/bump-version.js",
+    "changelog:update": "node scripts/update-changelog.js",
+    "readme:update": "node scripts/update-readme.js",
+    "changelogs:update": "node scripts/update-changelogs.js",
+    "build": "node scripts/build.js",
+    "release:prepare": "npm run version:bump && npm run changelogs:update",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jasonbahl/automation-tests.git"
+  },
+  "keywords": [
+    "wordpress",
+    "plugin",
+    "automation",
+    "github",
+    "workflows"
+  ],
+  "author": "Jason Bahl",
+  "license": "GPL-2.0-or-later",
+  "bugs": {
+    "url": "https://github.com/jasonbahl/automation-tests/issues"
+  },
+  "homepage": "https://github.com/jasonbahl/automation-tests#readme",
+  "devDependencies": {
+    "archiver": "^5.3.1",
+    "fs-extra": "^11.1.1",
+    "glob": "^10.3.3",
+    "yargs": "^17.7.2"
+  }
+}

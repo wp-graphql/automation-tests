@@ -1,0 +1,87 @@
+name: Release Management
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Force a specific release type (leave empty for auto-detection)'
+        required: false
+        type: choice
+        options:
+          - auto
+          - major
+          - minor
+          - patch
+        default: 'auto'
+  schedule:
+    # Run on the 1st and 15th of each month
+    - cron: '0 0 1,15 * *'
+
+jobs:
+  prepare-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          
+      - name: Install dependencies
+        run: npm ci
+          
+      - name: Check for changesets
+        id: check_changesets
+        run: |
+          if [ -d ".changesets" ] && [ "$(ls -A .changesets)" ]; then
+            echo "::set-output name=has_changesets::true"
+          else
+            echo "::set-output name=has_changesets::false"
+            echo "No changesets found. Exiting."
+            exit 1
+          fi
+          
+      - name: Determine version bump
+        id: version_bump
+        run: |
+          if [[ "${{ github.event.inputs.release_type }}" != "auto" ]]; then
+            # Use the specified release type
+            npm run version:bump -- --type=${{ github.event.inputs.release_type }}
+          else
+            # Auto-detect release type from changesets
+            npm run version:bump
+          fi
+          
+          # Get the new version after bump
+          NEW_VERSION=$(grep -oP "define\('AUTOMATION_TESTS_VERSION', '\K[^']+" constants.php)
+          echo "::set-output name=version::${NEW_VERSION}"
+          
+      - name: Create release branch
+        run: |
+          git checkout -b release/v${{ steps.version_bump.outputs.version }}
+          
+      - name: Update changelogs
+        run: |
+          npm run changelogs:update -- --version=${{ steps.version_bump.outputs.version }}
+          
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "release: prepare v${{ steps.version_bump.outputs.version }}"
+          title: "release: v${{ steps.version_bump.outputs.version }}"
+          body: |
+            ## Release v${{ steps.version_bump.outputs.version }}
+            
+            This PR prepares the release of version ${{ steps.version_bump.outputs.version }}.
+            
+            ### Changelog
+            
+            Please see CHANGELOG.md for details.
+          branch: release/v${{ steps.version_bump.outputs.version }}
+          base: main
+          labels: release 

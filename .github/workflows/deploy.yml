@@ -1,0 +1,115 @@
+name: Deploy to WordPress.org and GitHub
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build Plugin
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          tools: composer
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          
+      - name: Install dependencies
+        run: |
+          # Install Composer dependencies if composer.json exists
+          if [ -f "composer.json" ]; then
+            composer install --no-dev --optimize-autoloader
+          fi
+          
+          # Install npm dependencies
+          npm ci
+          
+      - name: Build plugin zip
+        run: npm run build
+          
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: plugin-zip
+          path: automation-tests.zip
+
+  github-release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+          
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: plugin-zip
+          
+      - name: Get version from tag
+        id: get_version
+        run: echo "::set-output name=version::${GITHUB_REF#refs/tags/v}"
+          
+      - name: Extract changelog
+        id: changelog
+        run: |
+          # Extract changelog for this version from CHANGELOG.md
+          VERSION="${{ steps.get_version.outputs.version }}"
+          
+          # Check if CHANGELOG.md exists
+          if [ -f "CHANGELOG.md" ]; then
+            # Extract section for this version
+            SECTION=$(sed -n "/## v${VERSION}/,/## v/p" CHANGELOG.md | sed '$d')
+            
+            if [ -n "$SECTION" ]; then
+              echo "CONTENT<<EOF" >> $GITHUB_OUTPUT
+              echo "$SECTION" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            else
+              echo "CONTENT=Release version ${VERSION}" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "CONTENT=Release version ${VERSION}" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: automation-tests.zip
+          body: |
+            ## Automation Tests v${{ steps.get_version.outputs.version }}
+            
+            ${{ steps.changelog.outputs.content }}
+          
+  wordpress-org:
+    name: Deploy to WordPress.org
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: plugin-zip
+          
+      - name: Unzip plugin
+        run: unzip automation-tests.zip -d plugin
+          
+      - name: WordPress Plugin Deploy
+        uses: 10up/action-wordpress-plugin-deploy@stable
+        env:
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SLUG: automation-tests
+          BUILD_DIR: plugin 
