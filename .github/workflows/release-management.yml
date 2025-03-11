@@ -1,12 +1,15 @@
 name: Release Management
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  # Using pull_request_target instead of pull_request for security reasons:
+  # - Runs in the context of the BASE repository, not the fork
+  # - Has access to repository secrets
+  # - Can commit changes to protected branches
+  # - SECURITY NOTE: Be careful when checking out PR code with this event type
+  pull_request_target:
+    types: [closed]
     branches:
       - main
-    paths:
-      - '.changesets/**'
   workflow_dispatch:
     inputs:
       release_type:
@@ -19,20 +22,41 @@ on:
           - minor
           - patch
         default: 'auto'
+      target_branch:
+        description: 'Target branch for manual release (usually develop)'
+        required: false
+        default: 'develop'
   schedule:
     # Run on the 1st and 15th of each month
     - cron: '0 0 1,15 * *'
 
 jobs:
   prepare-release:
-    # Only run if the PR is from develop to main or if manually triggered or scheduled
-    if: (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'develop') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    # Only run if:
+    # 1. PR from develop to main is merged, OR
+    # 2. Manually triggered, OR
+    # 3. Scheduled run
+    if: (github.event_name == 'pull_request_target' && github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'develop') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     steps:
+      - name: Set checkout ref
+        id: set_ref
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request_target" ]]; then
+            echo "ref=main" >> $GITHUB_OUTPUT
+          else
+            echo "ref=${{ github.event.inputs.target_branch || 'develop' }}" >> $GITHUB_OUTPUT
+          fi
+      
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          # For PR events, check out the main branch
+          # For manual/scheduled events, check out the specified target branch or develop
+          ref: ${{ steps.set_ref.outputs.ref }}
+          # Use a personal access token with repo scope for better permissions
+          token: ${{ secrets.REPO_PAT }}
           
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -72,36 +96,62 @@ jobs:
         run: |
           npm run changelogs:update -- --version=${{ steps.version_bump.outputs.version }}
           
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          # Extract changelog content for the current version
+          CHANGELOG_CONTENT=$(awk '/^## \['"${{ steps.version_bump.outputs.version }}"'\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md)
+          
+          # Escape newlines for GitHub Actions
+          CHANGELOG_CONTENT="${CHANGELOG_CONTENT//'%'/'%25'}"
+          CHANGELOG_CONTENT="${CHANGELOG_CONTENT//$'\n'/'%0A'}"
+          CHANGELOG_CONTENT="${CHANGELOG_CONTENT//$'\r'/'%0D'}"
+          
+          echo "content=${CHANGELOG_CONTENT}" >> $GITHUB_OUTPUT
+          
       - name: Commit changes
-        if: github.event_name == 'pull_request'
+        if: github.event_name != 'pull_request_target'
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "release: prepare v${{ steps.version_bump.outputs.version }}"
           file_pattern: "*.php *.md *.txt package.json"
-          branch: ${{ github.event.pull_request.head.ref }}
+          # For manual/scheduled events, commit to the specified target branch or develop
+          branch: ${{ github.event.inputs.target_branch || 'develop' }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.REPO_PAT }}
           
-      - name: Create release branch
-        if: github.event_name != 'pull_request'
+      - name: Create and push tag
+        if: github.event_name == 'pull_request_target'
         run: |
-          git checkout -b release/v${{ steps.version_bump.outputs.version }}
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
           
-      - name: Create pull request
-        if: github.event_name != 'pull_request'
-        uses: peter-evans/create-pull-request@v4
+          # Create an annotated tag with the changelog as the message
+          git tag -a "v${{ steps.version_bump.outputs.version }}" -m "Release v${{ steps.version_bump.outputs.version }}"
+          
+          # Push the tag
+          git push origin "v${{ steps.version_bump.outputs.version }}"
+          
+      - name: Create GitHub Release
+        if: github.event_name == 'pull_request_target'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_PAT }}
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "release: prepare v${{ steps.version_bump.outputs.version }}"
-          title: "release: v${{ steps.version_bump.outputs.version }}"
-          body: |
-            ## Release v${{ steps.version_bump.outputs.version }}
-            
-            This PR prepares the release of version ${{ steps.version_bump.outputs.version }}.
-            
-            ### Changelog
-            
-            Please see CHANGELOG.md for details.
-          branch: release/v${{ steps.version_bump.outputs.version }}
-          base: main
-          labels: release 
+          tag_name: v${{ steps.version_bump.outputs.version }}
+          release_name: Release v${{ steps.version_bump.outputs.version }}
+          body: ${{ steps.release_notes.outputs.content }}
+          draft: false
+          prerelease: false
+          
+      - name: Archive changesets
+        if: github.event_name == 'pull_request_target'
+        run: |
+          # Move all changesets to the archive directory
+          mkdir -p .changesets/archive
+          find .changesets -maxdepth 1 -name "*.md" -type f -exec mv {} .changesets/archive/ \;
+          
+          # Commit the archived changesets
+          git add .changesets/archive
+          git commit -m "chore: archive changesets for v${{ steps.version_bump.outputs.version }}"
+          git push origin main 
