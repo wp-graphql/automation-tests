@@ -31,8 +31,8 @@ This plugin is a testing ground for GitHub Actions workflows before implementing
 
 **⚠️ BREAKING CHANGES**: This release contains breaking changes that may require updates to your code.
 
-* BREAKING CHANGE: Refactor authentication system (https://github.com/jasonbahl/automation-tests/pull/1000)
-* BREAKING CHANGE: Refactor API endpoints (https://github.com/jasonbahl/automation-tests/pull/999)
+* feat!: Add new authentication system (https://github.com/jasonbahl/automation-tests/pull/3)
+* BREAKING CHANGE: Refactor API endpoints (https://github.com/jasonbahl/automation-tests/pull/2)
 
 Please review these changes before upgrading.
 
