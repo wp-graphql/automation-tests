@@ -1,14 +1,21 @@
 name: Generate Changeset
 
 # This workflow can be triggered in two ways:
-# 1. By adding the 'ready-for-changeset' label to a pull request
+# 1. When a pull request is merged to the develop branch
 # 2. Manually via the GitHub Actions UI using the workflow_dispatch event
 #    - Go to Actions > Generate Changeset > Run workflow
 #    - Enter the PR number and click "Run workflow"
 
 on:
-  pull_request:
-    types: [labeled]
+  # Using pull_request_target instead of pull_request for security reasons:
+  # - Runs in the context of the BASE repository, not the fork
+  # - Has access to repository secrets
+  # - Can commit changes to protected branches
+  # - SECURITY NOTE: Be careful when checking out PR code with this event type
+  pull_request_target:
+    types: [closed]
+    branches:
+      - develop
   workflow_dispatch:
     inputs:
       pr_number:
@@ -18,7 +25,7 @@ on:
 
 jobs:
   generate-changeset:
-    if: (github.event_name == 'pull_request' && github.event.label.name == 'ready-for-changeset') || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'pull_request_target' && github.event.pull_request.merged == true) || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -79,10 +86,11 @@ jobs:
           # Set the GITHUB_TOKEN to REPO_PAT for better permissions
           GITHUB_TOKEN: ${{ secrets.REPO_PAT }}
           
-      - name: Remove label
-        if: github.event_name == 'pull_request'
+      - name: Add comment to PR
+        if: github.event_name == 'pull_request_target'
         run: |
-          curl -X DELETE \
+          curl -X POST \
             -H "Authorization: token ${{ secrets.REPO_PAT }}" \
             -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/labels/ready-for-changeset" 
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            -d '{"body":"✅ Changeset generated automatically after merge"}' 
