@@ -67,14 +67,17 @@ jobs:
             --body="${{ steps.pr_info.outputs.pr_body }}"
           
       - name: Commit changeset
+        # The GITHUB_TOKEN is automatically used by this action
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "chore: add changeset for PR #${{ steps.pr_info.outputs.pr_number }}"
           file_pattern: ".changesets/*.md"
           branch: develop
-          # Use a personal access token with repo scope for better permissions
           commit_options: '--no-verify'
           push_options: '--force'
+        env:
+          # Set the GITHUB_TOKEN to REPO_PAT for better permissions
+          GITHUB_TOKEN: ${{ secrets.REPO_PAT }}
           
       - name: Remove label
         if: github.event_name == 'pull_request'
