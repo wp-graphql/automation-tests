@@ -1,6 +1,12 @@
 name: Release Management
 
 on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+    paths:
+      - '.changesets/**'
   workflow_dispatch:
     inputs:
       release_type:
@@ -19,6 +25,8 @@ on:
 
 jobs:
   prepare-release:
+    # Only run if the PR is from develop to main or if manually triggered or scheduled
+    if: (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'develop') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -38,9 +46,9 @@ jobs:
         id: check_changesets
         run: |
           if [ -d ".changesets" ] && [ "$(ls -A .changesets)" ]; then
-            echo "::set-output name=has_changesets::true"
+            echo "has_changesets=true" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=has_changesets::false"
+            echo "has_changesets=false" >> $GITHUB_OUTPUT
             echo "No changesets found. Exiting."
             exit 1
           fi
@@ -48,7 +56,7 @@ jobs:
       - name: Determine version bump
         id: version_bump
         run: |
-          if [[ "${{ github.event.inputs.release_type }}" != "auto" ]]; then
+          if [[ "${{ github.event.inputs.release_type }}" != "auto" && "${{ github.event.inputs.release_type }}" != "" ]]; then
             # Use the specified release type
             npm run version:bump -- --type=${{ github.event.inputs.release_type }}
           else
@@ -58,17 +66,29 @@ jobs:
           
           # Get the new version after bump
           NEW_VERSION=$(grep -oP "define\('AUTOMATION_TESTS_VERSION', '\K[^']+" constants.php)
-          echo "::set-output name=version::${NEW_VERSION}"
-          
-      - name: Create release branch
-        run: |
-          git checkout -b release/v${{ steps.version_bump.outputs.version }}
+          echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
           
       - name: Update changelogs
         run: |
           npm run changelogs:update -- --version=${{ steps.version_bump.outputs.version }}
           
+      - name: Commit changes
+        if: github.event_name == 'pull_request'
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "release: prepare v${{ steps.version_bump.outputs.version }}"
+          file_pattern: "*.php *.md *.txt package.json"
+          branch: ${{ github.event.pull_request.head.ref }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Create release branch
+        if: github.event_name != 'pull_request'
+        run: |
+          git checkout -b release/v${{ steps.version_bump.outputs.version }}
+          
       - name: Create pull request
+        if: github.event_name != 'pull_request'
         uses: peter-evans/create-pull-request@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
