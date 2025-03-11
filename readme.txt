@@ -14,7 +14,7 @@ A plugin to test automation workflows.
 
 This is a test repository for experimenting with GitHub Workflows for WordPress plugin development and release management.
 
-(REMOVE ME: This is a test that should be removed)
+(REMOVE ME: change this and open a PR to trigger a workfow)
 
 == Installation ==
 
