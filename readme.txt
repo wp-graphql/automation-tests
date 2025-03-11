@@ -16,6 +16,7 @@ This is a test repository for experimenting with GitHub Workflows for WordPress 
 
 (REMOVE ME: change this and open a PR to trigger a workfow)
 
+
 == Installation ==
 
 1. Upload the plugin files to the `/wp-content/plugins/automation-tests` directory, or install the plugin through the WordPress plugins screen directly.
