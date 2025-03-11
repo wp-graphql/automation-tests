@@ -1,8 +1,13 @@
 name: Release Management
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  # Using pull_request_target instead of pull_request for security reasons:
+  # - Runs in the context of the BASE repository, not the fork
+  # - Has access to repository secrets
+  # - Can commit changes to protected branches
+  # - SECURITY NOTE: Be careful when checking out PR code with this event type
+  pull_request_target:
+    types: [opened, synchronize, reopened, labeled]
     branches:
       - main
     paths:
@@ -25,14 +30,20 @@ on:
 
 jobs:
   prepare-release:
-    # Only run if the PR is from develop to main or if manually triggered or scheduled
-    if: (github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'develop') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    # Only run if:
+    # 1. PR is from develop to main AND has the 'release' label, OR
+    # 2. Manually triggered, OR
+    # 3. Scheduled run
+    if: (github.event_name == 'pull_request_target' && github.event.pull_request.head.ref == 'develop' && contains(github.event.pull_request.labels.*.name, 'release')) || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.base.ref || 'main' }}
+          # Use a personal access token with repo scope for better permissions
+          token: ${{ secrets.REPO_PAT }}
           
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -73,25 +84,25 @@ jobs:
           npm run changelogs:update -- --version=${{ steps.version_bump.outputs.version }}
           
       - name: Commit changes
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request_target'
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "release: prepare v${{ steps.version_bump.outputs.version }}"
           file_pattern: "*.php *.md *.txt package.json"
           branch: ${{ github.event.pull_request.head.ref }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.REPO_PAT }}
           
       - name: Create release branch
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request_target'
         run: |
           git checkout -b release/v${{ steps.version_bump.outputs.version }}
           
       - name: Create pull request
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request_target'
         uses: peter-evans/create-pull-request@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.REPO_PAT }}
           commit-message: "release: prepare v${{ steps.version_bump.outputs.version }}"
           title: "release: v${{ steps.version_bump.outputs.version }}"
           body: |
