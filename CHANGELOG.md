@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.0.0 - 2025-03-11
+
+> ⚠️ **BREAKING CHANGES**: This release contains breaking changes. Please review before upgrading.
+
+### Breaking Changes
+
+- feat!: Add new authentication system ([#3](https://github.com/jasonbahl/automation-tests/pull/3))
+- BREAKING CHANGE: Refactor API endpoints ([#2](https://github.com/jasonbahl/automation-tests/pull/2))
+
+### Bug Fixes
+
+- fix: update bug in script that was breaking things ([#4](https://github.com/jasonbahl/automation-tests/pull/4))
+- fix: update documentation with clearer examples ([#1](https://github.com/jasonbahl/automation-tests/pull/1))
+
 ## v1.0.0 - 2025-03-11
 
 > ⚠️ **BREAKING CHANGES**: This release contains breaking changes. Please review before upgrading.
