@@ -215,12 +215,41 @@ function generateReadmeChangelogContent(groups, version) {
 }
 
 /**
+ * Generate upgrade notice content from grouped changesets
+ * 
+ * @param {Object} groups Object with changesets grouped by type
+ * @param {string} version Version for the upgrade notice
+ * @returns {string} Formatted upgrade notice content for readme.txt
+ */
+function generateUpgradeNoticeContent(groups, version) {
+  // Only generate upgrade notices for versions with breaking changes
+  if (groups.breaking.length === 0) {
+    return '';
+  }
+  
+  let content = `= ${version} =\n\n`;
+  content += `**⚠️ BREAKING CHANGES**: This release contains breaking changes that may require updates to your code.\n\n`;
+  
+  // Add breaking changes
+  groups.breaking.forEach(changeset => {
+    const title = changeset.title;
+    const prLink = changeset.pr ? `https://github.com/jasonbahl/automation-tests/pull/${changeset.pr}` : '';
+    content += `* ${title}${prLink ? ` (${prLink})` : ''}\n`;
+  });
+  
+  content += '\nPlease review these changes before upgrading.\n';
+  
+  return content;
+}
+
+/**
  * Update readme.txt with new changelog content
  * 
  * @param {string} newContent New changelog content to add
  * @param {string} version Version for the changelog entry
+ * @param {string} upgradeNotice Upgrade notice content to add (optional)
  */
-function updateReadme(newContent, version) {
+function updateReadme(newContent, version, upgradeNotice = '') {
   const readmePath = path.join(process.cwd(), 'readme.txt');
   
   // Create readme.txt if it doesn't exist
@@ -252,6 +281,10 @@ This is a test repository for experimenting with GitHub Workflows for WordPress 
 
 This plugin is a testing ground for GitHub Actions workflows before implementing them in production repositories.
 
+== Upgrade Notice ==
+
+${upgradeNotice}
+
 == Changelog ==
 
 `;
@@ -266,6 +299,25 @@ This plugin is a testing ground for GitHub Actions workflows before implementing
     /Stable tag: .+/,
     `Stable tag: ${version}`
   );
+  
+  // Update upgrade notice if provided
+  if (upgradeNotice) {
+    const upgradeNoticeMatch = readmeContent.match(/(== Upgrade Notice ==\n\n)([\s\S]*?)(\n\n==|$)/);
+    
+    if (upgradeNoticeMatch) {
+      // Insert new upgrade notice at the top of the upgrade notice section
+      readmeContent = readmeContent.replace(
+        /(== Upgrade Notice ==\n\n)([\s\S]*?)(\n\n==|$)/,
+        `$1${upgradeNotice}\n\n$2$3`
+      );
+    } else {
+      // Add upgrade notice section if it doesn't exist
+      readmeContent = readmeContent.replace(
+        /(== Frequently Asked Questions ==[\s\S]*?)(\n\n==|$)/,
+        `$1\n\n== Upgrade Notice ==\n\n${upgradeNotice}$2`
+      );
+    }
+  }
   
   // Find the changelog section
   const changelogMatch = readmeContent.match(/(== Changelog ==\n\n)([\s\S]*)/);
@@ -303,8 +355,9 @@ function updateReadmeFromChangesets() {
     
     const groupedChangesets = groupChangesetsByType(changesets);
     const readmeContent = generateReadmeChangelogContent(groupedChangesets, version);
+    const upgradeNotice = generateUpgradeNoticeContent(groupedChangesets, version);
     
-    updateReadme(readmeContent, version);
+    updateReadme(readmeContent, version, upgradeNotice);
     
     console.log('readme.txt update complete!');
   } catch (err) {

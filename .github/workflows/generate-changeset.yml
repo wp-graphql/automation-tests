@@ -1,8 +1,8 @@
 name: Generate Changeset
 
 on:
-  pull_request:
-    types: [closed]
+  pull_request_review:
+    types: [submitted]
     branches:
       - develop
   workflow_dispatch:
@@ -14,7 +14,7 @@ on:
 
 jobs:
   generate-changeset:
-    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+    if: (github.event.review.state == 'approved' && github.event.pull_request.base.ref == 'develop') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -22,7 +22,8 @@ jobs:
         with:
           fetch-depth: 0
           ref: develop
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # Use a personal access token with repo scope for better permissions
+          token: ${{ secrets.REPO_PAT }}
           
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -37,22 +38,21 @@ jobs:
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             PR_NUMBER="${{ github.event.inputs.pr_number }}"
-            PR_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}")
           else
             PR_NUMBER="${{ github.event.pull_request.number }}"
-            PR_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}")
           fi
+          
+          PR_DATA=$(curl -s -H "Authorization: token ${{ secrets.REPO_PAT }}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}")
           
           PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
           PR_BODY=$(echo "$PR_DATA" | jq -r '.body')
           PR_AUTHOR=$(echo "$PR_DATA" | jq -r '.user.login')
           
-          echo "::set-output name=pr_number::${PR_NUMBER}"
-          echo "::set-output name=pr_title::${PR_TITLE}"
-          echo "::set-output name=pr_author::${PR_AUTHOR}"
-          echo "::set-output name=pr_body::${PR_BODY}"
+          echo "pr_number=${PR_NUMBER}" >> $GITHUB_OUTPUT
+          echo "pr_title=${PR_TITLE}" >> $GITHUB_OUTPUT
+          echo "pr_author=${PR_AUTHOR}" >> $GITHUB_OUTPUT
+          echo "pr_body=${PR_BODY}" >> $GITHUB_OUTPUT
           
       - name: Generate changeset
         run: |
@@ -67,4 +67,7 @@ jobs:
         with:
           commit_message: "chore: add changeset for PR #${{ steps.pr_info.outputs.pr_number }}"
           file_pattern: ".changesets/*.md"
-          branch: develop 
+          branch: develop
+          # Use a personal access token with repo scope for better permissions
+          commit_options: '--no-verify'
+          push_options: '--force' 

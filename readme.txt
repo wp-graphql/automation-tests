@@ -3,7 +3,7 @@ Contributors: jasonbahl
 Tags: testing, automation
 Requires at least: 5.0
 Tested up to: 6.2
-Stable tag: 1.0.0
+Stable tag: 2.0.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -27,7 +27,7 @@ This plugin is a testing ground for GitHub Actions workflows before implementing
 
 == Upgrade Notice ==
 
-= 1.0.0 =
+= 2.0.0 =
 
 **⚠️ BREAKING CHANGES**: This release contains breaking changes that may require updates to your code.
 
@@ -35,23 +35,6 @@ This plugin is a testing ground for GitHub Actions workflows before implementing
 * BREAKING CHANGE: Refactor API endpoints (https://github.com/jasonbahl/automation-tests/pull/999)
 
 Please review these changes before upgrading.
-
-
-
-== Changelog ==
-
-= 1.0.0 =
-
-**⚠️ BREAKING CHANGES**: This release contains breaking changes. Please review before upgrading.
-
-**Breaking Changes**
-
-* BREAKING CHANGE: Refactor authentication system (https://github.com/jasonbahl/automation-tests/pull/1000)
-* BREAKING CHANGE: Refactor API endpoints (https://github.com/jasonbahl/automation-tests/pull/999)
-
-**Bug Fixes**
-
-* fix: update bug in script that was breaking things (https://github.com/jasonbahl/automation-tests/pull/1001)
 
 = 0.2.1 =
 
@@ -85,3 +68,35 @@ Please review these changes before upgrading.
 * Initial release
 * Basic WordPress plugin structure
 * GitHub Workflows for automating release management 
+
+== Changelog ==
+
+= 2.0.0 =
+
+**⚠️ BREAKING CHANGES**: This release contains breaking changes. Please review before upgrading.
+
+**Breaking Changes**
+
+* BREAKING CHANGE: Refactor authentication system (https://github.com/jasonbahl/automation-tests/pull/1000)
+* BREAKING CHANGE: Refactor API endpoints (https://github.com/jasonbahl/automation-tests/pull/999)
+
+**New Features**
+
+* feat: Add script-based workflow automation (https://github.com/jasonbahl/automation-tests/pull/123)
+* feat: Add combined changelog update script (https://github.com/jasonbahl/automation-tests/pull/456)
+* feat: Add new feature (https://github.com/jasonbahl/automation-tests/pull/123)
+
+**Bug Fixes**
+
+* fix: update bug in script that was breaking things (https://github.com/jasonbahl/automation-tests/pull/1001)
+* fix: Prevent duplicate changelog entries (https://github.com/jasonbahl/automation-tests/pull/789)
+
+= 1.0.0 =
+
+**⚠️ BREAKING CHANGES**: This release contains breaking changes that may require updates to your code.
+
+* BREAKING CHANGE: Refactor authentication system (https://github.com/jasonbahl/automation-tests/pull/1000)
+* BREAKING CHANGE: Refactor API endpoints (https://github.com/jasonbahl/automation-tests/pull/999)
+
+Please review these changes before upgrading.
+
