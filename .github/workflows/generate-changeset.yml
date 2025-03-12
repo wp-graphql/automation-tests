@@ -160,16 +160,14 @@ jobs:
           # Read the changelog content from markdown file
           CHANGELOG_CONTENT=$(cat changelog_content.md)
           
-          # Create the PR body with proper formatting
-          PR_BODY="## Upcoming Changes
-
-$CHANGELOG_CONTENT
-
-This PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch."
+          # Escape newlines for JSON
+          CHANGELOG_CONTENT="${CHANGELOG_CONTENT//$'\n'/\\n}"
           
           # Create the JSON payload for the PR body update
+          BODY_TEXT="## Upcoming Changes\n\n${CHANGELOG_CONTENT}\n\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch."
+          
           # Use jq to properly escape the content
-          PAYLOAD=$(jq -n --arg body "$PR_BODY" --arg title "$PR_TITLE" '{body: $body, title: $title}')
+          PAYLOAD=$(jq -n --arg body "$BODY_TEXT" --arg title "$PR_TITLE" '{body: $body, title: $title}')
           
           # For debugging
           echo "API Payload:"
@@ -195,20 +193,18 @@ This PR contains all changes that will be included in the next release. It is au
           # Read the changelog content from markdown file
           CHANGELOG_CONTENT=$(cat changelog_content.md)
           
-          # Create the PR body with proper formatting
-          PR_BODY="## Upcoming Changes
-
-$CHANGELOG_CONTENT
-
-This PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch."
+          # Escape newlines for JSON
+          CHANGELOG_CONTENT="${CHANGELOG_CONTENT//$'\n'/\\n}"
           
           # Create the JSON payload for the PR creation
+          BODY_TEXT="## Upcoming Changes\n\n${CHANGELOG_CONTENT}\n\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch."
+          
           # Use jq to properly escape the content
           PAYLOAD=$(jq -n \
             --arg title "release: next version 📦" \
             --arg head "develop" \
             --arg base "main" \
-            --arg body "$PR_BODY" \
+            --arg body "$BODY_TEXT" \
             '{title: $title, head: $head, base: $base, body: $body}')
           
           # For debugging
