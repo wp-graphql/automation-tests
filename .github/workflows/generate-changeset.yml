@@ -117,11 +117,12 @@ jobs:
       - name: Generate release notes
         id: changelog
         run: |
-          # Generate release notes in JSON format for PR body
-          npm run release:notes -- --format=json > changelog_content.json
+          # Generate release notes in markdown format for PR body
+          # Skip the npm command output by redirecting stderr to /dev/null and grep out the command line
+          npm run release:notes 2>/dev/null | grep -v "^>" > changelog_content.md
           
-          # Also generate markdown format for debugging
-          npm run release:notes > changelog_content.md
+          # Also generate JSON format for debugging
+          npm run release:notes -- --format=json > changelog_content.json
           
           # Output the changelog for debugging
           echo "Generated changelog (markdown format):"
@@ -157,37 +158,87 @@ jobs:
           
           PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
           
-          # Read the changelog content from JSON file
-          CHANGELOG_JSON=$(cat changelog_content.json)
+          # Create the PR body with proper formatting
+          PR_BODY="## Upcoming Changes"
+          PR_BODY="${PR_BODY}"$'\n\n'
+          PR_BODY="${PR_BODY}$(cat changelog_content.md)"
+          PR_BODY="${PR_BODY}"$'\n\n'
+          PR_BODY="${PR_BODY}This PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch."
+          
+          # Use jq to properly escape the content
+          PAYLOAD=$(jq -n --arg body "$PR_BODY" --arg title "$PR_TITLE" '{body: $body, title: $title}')
+          
+          # For debugging
+          echo "API Payload:"
+          echo "$PAYLOAD" | jq '.'
           
           # Update the PR
-          curl -X PATCH \
+          RESPONSE=$(curl -X PATCH \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/json" \
             "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}" \
-            -d "{
-              \"body\": \"## Upcoming Changes\\n\\n${CHANGELOG_JSON}\\n\\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch.\"
-            }"
+            -d "$PAYLOAD")
             
+          # Print full response for debugging
+          echo "Full API Response:"
+          echo "$RESPONSE" | jq '.'
+          
           echo "Updated existing release PR #${PR_NUMBER} with latest changelog"
           
       - name: Create new release PR
         if: steps.check_pr.outputs.exists == 'false'
         run: |
-          # Read the changelog content from JSON file
-          CHANGELOG_JSON=$(cat changelog_content.json)
+          # Create the PR body with proper formatting
+          PR_BODY="## Upcoming Changes"
+          PR_BODY="${PR_BODY}"$'\n\n'
+          PR_BODY="${PR_BODY}$(cat changelog_content.md)"
+          PR_BODY="${PR_BODY}"$'\n\n'
+          PR_BODY="${PR_BODY}This PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch."
+          
+          # Use jq to properly escape the content
+          PAYLOAD=$(jq -n \
+            --arg title "release: next version 📦" \
+            --arg head "develop" \
+            --arg base "main" \
+            --arg body "$PR_BODY" \
+            '{title: $title, head: $head, base: $base, body: $body}')
+          
+          # For debugging
+          echo "API Payload:"
+          echo "$PAYLOAD" | jq '.'
           
           # Create a new PR from develop to main
           RESPONSE=$(curl -X POST \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/json" \
             "https://api.github.com/repos/${{ github.repository }}/pulls" \
-            -d "{
-              \"title\": \"release: next version 📦\",
-              \"head\": \"develop\",
-              \"base\": \"main\",
-              \"body\": \"## Upcoming Changes\\n\\n${CHANGELOG_JSON}\\n\\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch.\"
-            }")
+            -d "$PAYLOAD")
+          
+          # Print full response for debugging
+          echo "Full API Response:"
+          echo "$RESPONSE" | jq '.'
+          
+          # Check for error messages
+          ERROR_MESSAGE=$(echo "$RESPONSE" | jq -r '.message // "No error message"')
+          if [[ "$ERROR_MESSAGE" != "No error message" ]]; then
+            echo "Error creating PR: $ERROR_MESSAGE"
             
+            # Check for more detailed errors
+            ERRORS=$(echo "$RESPONSE" | jq -r '.errors // []')
+            if [[ "$ERRORS" != "[]" ]]; then
+              echo "Detailed errors: $ERRORS"
+            fi
+            
+            exit 1
+          fi
+          
           PR_NUMBER=$(echo "$RESPONSE" | jq -r '.number')
-          echo "Created new release PR #${PR_NUMBER} with initial changelog"
+          
+          if [[ -z "$PR_NUMBER" || "$PR_NUMBER" == "null" ]]; then
+            echo "Failed to create PR. No PR number returned."
+            exit 1
+          else
+            echo "Created new release PR #${PR_NUMBER} with initial changelog"
+          fi
