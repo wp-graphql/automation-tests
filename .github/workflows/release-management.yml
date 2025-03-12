@@ -99,16 +99,29 @@ jobs:
       - name: Generate release notes
         id: release_notes
         run: |
+          # Create a temporary file for the release notes
+          touch release_notes_temp.md
+          
           # Generate release notes directly using our script
-          npm run release:notes > release_notes.md
+          # Redirect stderr to /dev/null to avoid npm output in the content
+          # Use a temporary file to preserve formatting
+          npm run release:notes 2>/dev/null > release_notes_temp.md
+          
+          # Check if the file has content
+          if [ ! -s release_notes_temp.md ]; then
+            # If empty, provide a default message
+            echo "## No Changes" > release_notes_temp.md
+            echo "" >> release_notes_temp.md
+            echo "No changesets found. No changes to release at this time." >> release_notes_temp.md
+          fi
           
           # For debugging
           echo "Generated release notes:"
-          cat release_notes.md
+          cat release_notes_temp.md
           
           # Set the content for GitHub Actions output
           # Properly escape the content for GitHub Actions
-          RELEASE_NOTES=$(cat release_notes.md)
+          RELEASE_NOTES=$(cat release_notes_temp.md)
           RELEASE_NOTES="${RELEASE_NOTES//'%'/'%25'}"
           RELEASE_NOTES="${RELEASE_NOTES//$'\n'/'%0A'}"
           RELEASE_NOTES="${RELEASE_NOTES//$'\r'/'%0D'}"
@@ -117,7 +130,6 @@ jobs:
           echo "$RELEASE_NOTES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
           
-      # For non-PR events (manual/scheduled), commit changes to develop
       - name: Commit changes to develop
         if: github.event_name != 'pull_request_target'
         uses: stefanzweifel/git-auto-commit-action@v4
@@ -129,7 +141,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.REPO_PAT }}
           
-      # For PR events, handle all main branch operations
       - name: Commit changes to main
         if: github.event_name == 'pull_request_target'
         run: |
@@ -166,12 +177,14 @@ jobs:
       - name: Create GitHub Release
         if: github.event_name == 'pull_request_target'
         uses: actions/create-release@v1
+        id: create_release
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.REPO_PAT }}
         with:
           tag_name: v${{ steps.version_bump.outputs.version }}
           release_name: Release v${{ steps.version_bump.outputs.version }}
-          body: ${{ steps.release_notes.outputs.content }}
+          body_path: release_notes_temp.md
           draft: false
           prerelease: false
           
@@ -207,39 +220,44 @@ jobs:
             echo "No changesets found to archive"
           fi
           
-      # Sync all changes back to develop after release is complete
-      - name: Sync changes to develop branch
+      - name: Update develop branch with archived changesets
         if: github.event_name == 'pull_request_target'
         run: |
           # Configure Git if not already configured
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           
-          echo "Syncing all changes from main to develop branch"
-          
           # Fetch the latest develop branch
           git fetch origin develop
           
           # Create a temporary branch from develop
-          git checkout -b temp-sync-develop origin/develop
+          git checkout -b temp-update-develop origin/develop
           
-          # Merge changes from main (without committing yet)
-          git merge --no-commit --no-ff origin/main
-          
-          # Check if there are changes to commit
-          if [[ -n "$(git status --porcelain)" ]]; then
-            # Add all changes
-            git add .
+          # Check if there are archived changesets that aren't in develop
+          if [ -d ".changesets/archive" ] && [ -n "$(ls -A .changesets/archive)" ]; then
+            echo "Updating develop branch with archived changesets"
             
-            # Commit the changes
-            git commit -m "chore: sync changes from v${{ steps.version_bump.outputs.version }} release"
+            # Create archive directory if it doesn't exist in develop
+            mkdir -p .changesets/archive
             
-            # Push the changes to develop
-            git push origin temp-sync-develop:develop
+            # Copy the archived changesets to the develop branch
+            cp -r .changesets/archive/* .changesets/archive/
             
-            echo "Successfully synced all changes to develop branch"
+            # Check if there are changes to commit
+            if [[ -n "$(git status --porcelain)" ]]; then
+              # Add and commit the changes
+              git add .changesets/archive/
+              git commit -m "chore: sync archived changesets from v${{ steps.version_bump.outputs.version }} release"
+              
+              # Push the changes to develop
+              git push origin temp-update-develop:develop
+              
+              echo "Successfully updated develop branch with archived changesets"
+            else
+              echo "No changes to commit to develop branch"
+            fi
           else
-            echo "No changes to sync to develop branch"
+            echo "No archived changesets to sync to develop branch"
           fi
           
           # Clean up - switch back to main
