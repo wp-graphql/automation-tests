@@ -157,19 +157,19 @@ jobs:
           
           PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
           
-          # Read the changelog content from markdown file and preserve newlines
+          # Read the changelog content from markdown file
           CHANGELOG_CONTENT=$(cat changelog_content.md)
           
-          # Create the JSON payload for the PR body update
-          # Use jq's @json to properly escape the content
-          PAYLOAD=$(jq -n \
-            --arg title "$PR_TITLE" \
-            --arg body "## Upcoming Changes
+          # Create the PR body with proper formatting
+          PR_BODY="## Upcoming Changes
 
 $CHANGELOG_CONTENT
 
-This PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch." \
-            '{title: $title, body: $body}')
+This PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch."
+          
+          # Create the JSON payload for the PR body update
+          # Use jq to properly escape the content
+          PAYLOAD=$(jq -n --arg body "$PR_BODY" --arg title "$PR_TITLE" '{body: $body, title: $title}')
           
           # For debugging
           echo "API Payload:"
@@ -192,20 +192,23 @@ This PR contains all changes that will be included in the next release. It is au
       - name: Create new release PR
         if: steps.check_pr.outputs.exists == 'false'
         run: |
-          # Read the changelog content from markdown file and preserve newlines
+          # Read the changelog content from markdown file
           CHANGELOG_CONTENT=$(cat changelog_content.md)
           
+          # Create the PR body with proper formatting
+          PR_BODY="## Upcoming Changes
+
+$CHANGELOG_CONTENT
+
+This PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch."
+          
           # Create the JSON payload for the PR creation
-          # Use jq's @json to properly escape the content
+          # Use jq to properly escape the content
           PAYLOAD=$(jq -n \
             --arg title "release: next version 📦" \
             --arg head "develop" \
             --arg base "main" \
-            --arg body "## Upcoming Changes
-
-$CHANGELOG_CONTENT
-
-This PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch." \
+            --arg body "$PR_BODY" \
             '{title: $title, head: $head, base: $base, body: $body}')
           
           # For debugging
