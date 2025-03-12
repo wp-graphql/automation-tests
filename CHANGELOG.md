@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## v3.0.0 - 2025-03-12
+
+> ⚠️ **BREAKING CHANGES**: This release contains breaking changes. Please review before upgrading.
+
+### Breaking Changes
+
+- fix!: pray emoji ([#29](https://github.com/jasonbahl/automation-tests/pull/29))
+
+### Bug Fixes
+
+- fix: fire emoji ([#27](https://github.com/jasonbahl/automation-tests/pull/27))
+
 ## v2.2.1 - 2025-03-12
 
 ### Bug Fixes
