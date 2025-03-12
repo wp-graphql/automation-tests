@@ -53,16 +53,20 @@ function readChangesets() {
   const changesetDir = path.join(process.cwd(), '.changesets');
   
   if (!fs.existsSync(changesetDir)) {
-    console.error('No .changesets directory found.');
+    console.log('No .changesets directory found. Creating one...');
+    fs.mkdirSync(changesetDir, { recursive: true });
     return [];
   }
   
+  // Only read changesets from the main directory, not from the archive
   const changesetFiles = glob.sync('*.md', { cwd: changesetDir });
   
   if (changesetFiles.length === 0) {
     console.log('No changesets found.');
     return [];
   }
+  
+  console.log(`Found ${changesetFiles.length} changesets.`);
   
   return changesetFiles.map(file => {
     const content = fs.readFileSync(path.join(changesetDir, file), 'utf8');
@@ -76,9 +80,7 @@ function readChangesets() {
     try {
       // Parse the YAML-like front matter
       const lines = frontMatter[1].split('\n');
-      const changeset = {
-        file
-      };
+      const changeset = {};
       
       lines.forEach(line => {
         if (line.trim() === '' || line.startsWith('description:')) return;
@@ -89,6 +91,12 @@ function readChangesets() {
         // Remove quotes if present
         changeset[key.trim()] = value.replace(/^"(.*)"$/, '$1');
       });
+      
+      // Extract description
+      const descriptionMatch = content.match(/description: \|\n([\s\S]*?)(\n---|\n$)/);
+      if (descriptionMatch) {
+        changeset.description = descriptionMatch[1].trim();
+      }
       
       return changeset;
     } catch (err) {
