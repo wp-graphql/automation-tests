@@ -160,15 +160,30 @@ jobs:
           # Read the changelog content from JSON file
           CHANGELOG_JSON=$(cat changelog_content.json)
           
+          # Properly escape the changelog content for JSON
+          ESCAPED_CHANGELOG=$(echo "$CHANGELOG_JSON" | jq -Rs .)
+          
+          # Create the JSON payload separately
+          PAYLOAD=$(jq -n \
+            --arg body "## Upcoming Changes\n\n$(echo $ESCAPED_CHANGELOG | jq -r .)\n\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch." \
+            '{body: $body}')
+          
+          # For debugging
+          echo "API Payload:"
+          echo "$PAYLOAD" | jq '.'
+          
           # Update the PR
-          curl -X PATCH \
+          RESPONSE=$(curl -X PATCH \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/json" \
             "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}" \
-            -d "{
-              \"body\": \"## Upcoming Changes\\n\\n${CHANGELOG_JSON}\\n\\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch.\"
-            }"
+            -d "$PAYLOAD")
             
+          # Print full response for debugging
+          echo "Full API Response:"
+          echo "$RESPONSE" | jq '.'
+          
           echo "Updated existing release PR #${PR_NUMBER} with latest changelog"
           
       - name: Create new release PR
@@ -177,17 +192,28 @@ jobs:
           # Read the changelog content from JSON file
           CHANGELOG_JSON=$(cat changelog_content.json)
           
+          # Properly escape the changelog content for JSON
+          ESCAPED_CHANGELOG=$(echo "$CHANGELOG_JSON" | jq -Rs .)
+          
+          # Create the JSON payload separately
+          PAYLOAD=$(jq -n \
+            --arg title "release: next version 📦" \
+            --arg head "develop" \
+            --arg base "main" \
+            --arg body "## Upcoming Changes\n\n$(echo $ESCAPED_CHANGELOG | jq -r .)\n\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch." \
+            '{title: $title, head: $head, base: $base, body: $body}')
+          
+          # For debugging
+          echo "API Payload:"
+          echo "$PAYLOAD" | jq '.'
+          
           # Create a new PR from develop to main
           RESPONSE=$(curl -X POST \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/json" \
             "https://api.github.com/repos/${{ github.repository }}/pulls" \
-            -d "{
-              \"title\": \"release: next version 📦\",
-              \"head\": \"develop\",
-              \"base\": \"main\",
-              \"body\": \"## Upcoming Changes\\n\\n${CHANGELOG_JSON}\\n\\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch.\"
-            }")
+            -d "$PAYLOAD")
           
           # Print full response for debugging
           echo "Full API Response:"
