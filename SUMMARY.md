@@ -25,6 +25,7 @@
   - Auto-detect version bump type from changesets
   - Update both CHANGELOG.md and readme.txt
   - Create GitHub release with formatted release notes
+  - Delete processed changesets to prevent duplicate changelog entries
 - Updated `deploy.yml` for handling deployments:
   - Deploy to WordPress.org SVN
   - Create GitHub release with assets
@@ -70,4 +71,5 @@
 - **Contributor Recognition**: Enhanced release notes to include a contributors section with special recognition for first-time contributors.
 - **GitHub Workflow Improvements**: Updated the GitHub workflow to use environment variables instead of command-line arguments, making it cleaner and more maintainable.
 - **Temporary File Handling**: Improved the workflow to use temporary files for release notes, keeping the repository clean.
+- **Changeset Cleanup**: Changed from archiving changesets to deleting them after a release to prevent duplicate changelog entries.
 - **Documentation Updates**: Comprehensive documentation updates to reflect new features and options. 

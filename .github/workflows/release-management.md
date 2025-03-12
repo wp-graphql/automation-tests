@@ -57,11 +57,12 @@ The Release Management workflow is responsible for collecting changesets, determ
 - Include the formatted release notes in the release body
 - Upload build artifacts to the release
 
-### 7. Archive Changesets
+### 7. Delete Processed Changesets
 
-- Move processed changesets to the `.changesets/archive` directory
-- Commit the archived changesets
-- Update the develop branch with the archived changesets
+- Delete all changesets from the `.changesets` directory
+- Commit the deletion to the main branch
+- Update the develop branch by also deleting the changesets there
+- This prevents duplicate changelog entries in future releases
 
 ## Integration with Changeset Generation
 
@@ -72,8 +73,9 @@ The Release Management workflow works in tandem with the Changeset Generation wo
 3. The release PR contains formatted release notes from all changesets
 4. When the release PR is merged to main, the Release Management workflow is triggered
 5. It extracts the release notes from the PR body and uses them for the GitHub release
+6. After the release is created, all changesets are deleted to prevent duplication in future releases
 
-This integration ensures a smooth, automated release process with minimal manual intervention.
+This integration ensures a smooth, automated release process with minimal manual intervention and accurate changelog entries.
 
 ## GitHub Action Implementation
 

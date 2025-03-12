@@ -50,6 +50,7 @@ The repository implements several GitHub Actions workflows:
 - **Release Management**: Automates version bumping and changelog updates
   - Extracts release notes from PR body when merging to main
   - Creates GitHub releases with proper tagging
+  - Deletes processed changesets to prevent duplicate changelog entries
 - **Deploy**: Handles deployment to various environments
 
 ## Development Process
@@ -169,6 +170,7 @@ We've made several significant improvements to the changeset generation workflow
 - Direct file processing instead of relying on external scripts
 - Use of temporary files to keep the repository clean
 - Automatic PR creation and updating
+- Deletion of processed changesets to prevent duplicate changelog entries
 - Comprehensive documentation updates
 
 These improvements make the changeset generation process more reliable, user-friendly, and informative, enhancing the overall development workflow. 
