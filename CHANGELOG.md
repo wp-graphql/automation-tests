@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.2.0 - 2025-03-12
+
+### New Features
+
+- feat: trophy emoji ([#25](https://github.com/jasonbahl/automation-tests/pull/25))
+
 ## v2.1.0 - 2025-03-12
 
 ### New Features

@@ -3,7 +3,7 @@ Contributors: jasonbahl
 Tags: testing, automation
 Requires at least: 5.0
 Tested up to: 6.2
-Stable tag: 2.1.0
+Stable tag: 2.2.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -61,6 +61,12 @@ This plugin is a testing ground for GitHub Actions workflows before implementing
 * GitHub Workflows for automating release management 
 
 == Changelog ==
+
+= 2.2.0 =
+
+**New Features**
+
+* feat: trophy emoji (https://github.com/jasonbahl/automation-tests/pull/25)
 
 = 2.1.0 =
 

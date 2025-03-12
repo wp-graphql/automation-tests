@@ -1,5 +1,5 @@
 
-> automation-tests@2.1.0 release:notes
+> automation-tests@2.2.0 release:notes
 > node scripts/generate-release-notes.js
 
 No changesets found.
