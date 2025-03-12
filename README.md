@@ -1,74 +1,104 @@
 # Automation Tests
 
-This is a test repository for experimenting with GitHub Workflows for WordPress plugin development and release management.
+This repository contains tests and examples for automating various aspects of WordPress plugin development, including:
 
-## Overview
-
-This repository serves as a testing ground for GitHub Actions workflows before implementing them in production repositories like WPGraphQL. The goal is to create a set of reusable workflows that can be adapted for use across multiple WordPress plugin repositories.
-
-## Workflows
-
-The following workflows are implemented:
-
-- **[Semantic PR Titles](.github/workflows/semantic-pr-titles.yml)**: Ensures pull request titles follow semantic conventions (feat, fix, etc.)
-- **[Changeset Generation](.github/workflows/generate-changeset.yml)**: Generates changesets when PRs are labeled with 'ready-for-changeset'
-- **[Release Management](.github/workflows/release-management.yml)**: Collects changesets and prepares releases
-- **[Create Tag](.github/workflows/create-tag.yml)**: Creates a tag when a release PR is merged to main
-- **[Deployment](.github/workflows/deploy.yml)**: Deploys plugin to WordPress.org and creates GitHub releases
+- Changeset generation
+- Version bumping
+- Changelog updates
+- Release management
 
 ## Scripts
 
-All workflow logic is also available as Node.js scripts that can be run locally:
+The repository includes several Node.js scripts for automating common tasks:
 
-| Script | Description | Example Usage |
-|--------|-------------|---------------|
-| `npm run changeset:generate` | Generate a new changeset file | `npm run changeset:generate -- --pr=123 --title="feat: Add new feature"` or with breaking change `npm run changeset:generate -- --pr=123 --title="BREAKING CHANGE: Refactor API"` |
-| `npm run changeset:analyze` | Analyze changesets and determine bump type | `npm run changeset:analyze` or `npm run changeset:analyze -- --verbose` |
-| `npm run version:bump` | Bump version in constants.php | `npm run version:bump -- --type=minor` or `npm run version:bump` (auto-detects type) |
-| `npm run changelogs:update` | Update both CHANGELOG.md and readme.txt | `npm run changelogs:update -- --version=1.2.0` |
-| `npm run changelog:update` | Update only CHANGELOG.md | `npm run changelog:update -- --version=1.2.0` |
-| `npm run readme:update` | Update only readme.txt | `npm run readme:update -- --version=1.2.0` |
-| `npm run build` | Build the project | `npm run build` |
-| `npm run release:prepare` | Run version bump and update changelogs | `npm run release:prepare -- --version=1.2.3` |
+- **generate-changeset.js**: Creates changeset files for tracking changes
+- **generate-release-notes.js**: Generates formatted release notes from changesets
+- **analyze-changesets.js**: Analyzes changesets to determine version bump type
+- **bump-version.js**: Updates version numbers in plugin files
+- **update-changelog.js**: Updates the CHANGELOG.md file with new entries
+- **update-readme.js**: Updates the readme.txt file with new entries
+- **update-changelogs.js**: Updates both changelog files at once
+- **build.js**: Builds the plugin for release
 
 ## Breaking Change Detection
 
 Breaking changes are automatically detected from:
 
 1. Conventional commit syntax with ! (e.g., "feat!: Add breaking feature")
-2. Title prefixed with "BREAKING CHANGE:" or "BREAKING-CHANGE:"
-3. Description containing "BREAKING CHANGE:" or "BREAKING-CHANGE:"
-4. Explicit `--breaking=true` flag when generating a changeset
-
-The explicit `breaking` field in the changeset takes precedence over automatic detection. This allows for manual overrides when needed.
+2. Title prefixed with "BREAKING CHANGE:" or containing "BREAKING CHANGE:"
+3. Explicit `breaking: true` flag in changesets
 
 ## Changelog Formatting
 
-The changelog generation process:
+Changelogs are formatted according to WordPress plugin repository standards:
 
-- Highlights breaking changes with prominent warnings
-- Includes full links to PRs (e.g., `https://github.com/username/repo/pull/123`)
-- Categorizes changes by type (breaking changes, features, bug fixes)
-- Adds upgrade notice section for breaking changes in `readme.txt`
+- **readme.txt**: Uses the WordPress plugin repository format
+- **CHANGELOG.md**: Uses a more detailed Markdown format with:
+  - Categorized changes (breaking changes, features, fixes, other)
+  - Links to pull requests
+  - Contributors acknowledgment with special recognition for first-time contributors
 
-## Workflow Documentation
+## Workflows
 
-Detailed documentation for each workflow can be found in the [.github/workflows](.github/workflows) directory:
+The repository implements several GitHub Actions workflows:
 
-- [Changeset Generation](.github/workflows/changeset-generation.md)
-- [Release Management](.github/workflows/release-management.md)
-- [Deployment](.github/workflows/deployment.md)
+- **Changeset Generation**: Generates changesets when PRs are labeled with 'ready-for-changeset'
+- **Release Management**: Automates version bumping and changelog updates
+- **Deploy**: Handles deployment to various environments
 
 ## Development Process
 
-1. Contributors open pull requests from forks to the `develop` branch
-2. PR titles are validated using the Semantic PR Titles workflow
-3. When a PR is ready, the 'ready-for-changeset' label is added to trigger the Changeset Generation workflow
-4. The workflow creates a changeset file and commits it to the `develop` branch
-5. Changesets accumulate in the `develop` branch
-6. The Release Management workflow collects changesets and creates a release PR
-7. When the release PR is merged to `main`, the Create Tag workflow creates a tag
-8. The Deployment workflow is triggered by the tag and deploys the plugin to WordPress.org and creates a GitHub release
+1. Create a feature branch from `develop`
+2. Make changes and submit a PR to `develop`
+3. Add the 'ready-for-changeset' label to the PR to generate a changeset
+4. When the PR is merged, the changeset is committed to `develop`
+5. When ready for release, a release PR is created from `develop` to `main`
+6. The release PR includes all changes from changesets with proper formatting
+7. After merging the release PR, the plugin is tagged and released
+
+## Local Testing
+
+You can test the scripts locally:
+
+```bash
+# Generate a changeset
+npm run changeset:generate -- --title="Add new feature" --pr=123 --author="username" --type="feat"
+
+# Generate release notes
+npm run release:notes
+
+# Generate release notes in JSON format
+npm run release:notes -- --format=json
+
+# Generate release notes with a specific repository URL for PR links
+npm run release:notes -- --repo-url="https://github.com/wp-graphql/automation-tests"
+
+# Generate release notes with contributor recognition (requires GitHub token)
+npm run release:notes -- --token="your_github_token"
+
+# Using environment variables instead of command-line arguments
+export REPO_URL="https://github.com/wp-graphql/automation-tests"
+export GITHUB_TOKEN="your_github_token"
+npm run release:notes
+
+# Analyze changesets
+npm run changeset:analyze
+
+# Bump version
+npm run version:bump -- --type=minor
+
+# Update changelogs
+npm run changelogs:update
+```
+
+## Environment Variables
+
+The scripts support the following environment variables:
+
+- `REPO_URL`: Repository URL to use for PR links (used by `generate-release-notes.js`)
+- `GITHUB_TOKEN`: GitHub token for API requests (used by `generate-release-notes.js` for contributor recognition)
+
+You can set these variables in your environment or in a `.env` file to avoid passing them as command-line arguments each time.
 
 ## Directory Structure
 
@@ -86,6 +116,7 @@ Detailed documentation for each workflow can be found in the [.github/workflows]
 │   └── archive/                    # Archives processed changesets
 ├── scripts/                        # Node.js scripts
 │   ├── generate-changeset.js       # Generate changeset file
+│   ├── generate-release-notes.js   # Generate release notes from changesets
 │   ├── analyze-changesets.js       # Analyze changesets and determine bump type
 │   ├── bump-version.js             # Bump version numbers
 │   ├── update-changelog.js         # Update CHANGELOG.md
@@ -103,5 +134,33 @@ This is a test repository for workflow development. If you have suggestions for 
 
 ## License
 
-This project is licensed under the GPL v2 or later. 
+This project is licensed under the GPL v2 or later.
+
+## Recent Improvements
+
+We've made several significant improvements to the changeset generation workflow:
+
+### 1. Environment Variables Support
+- Added support for `REPO_URL` and `GITHUB_TOKEN` environment variables
+- Simplified configuration by setting values once in the environment
+- Reduced command-line complexity in the GitHub workflow
+
+### 2. Contributor Recognition
+- Added a contributors section to release notes
+- Special recognition for first-time contributors (3 or fewer commits)
+- Uses GitHub API to accurately identify contributor status
+
+### 3. Enhanced Release Notes
+- Better formatting with emoji icons for different change types
+- Full URLs for pull requests instead of just PR numbers
+- Automatic determination of bump type (major, minor, patch)
+- Categorization of changes into breaking changes, features, fixes, and other changes
+
+### 4. Improved Workflow
+- Cleaner GitHub workflow configuration
+- Better error handling and fallbacks
+- Direct file processing instead of relying on external scripts
+- Comprehensive documentation updates
+
+These improvements make the changeset generation process more reliable, user-friendly, and informative, enhancing the overall development workflow. 
 

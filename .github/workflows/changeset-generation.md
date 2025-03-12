@@ -4,92 +4,107 @@ This document outlines the requirements and implementation details for the Chang
 
 ## Overview
 
-When a pull request is merged to the `develop` branch, this workflow will automatically generate a changeset file that captures the details of the change. These changesets will be collected and used later for version bumping and changelog generation during the release process.
+This workflow automatically generates changesets for pull requests. Changesets are used to track changes that will be included in the next release, and they help in generating changelogs and determining version bumps.
 
-## Workflow Triggers
+## Triggers
 
-- Pull request labeled with 'ready-for-changeset'
-- Manual trigger (for testing or manual changeset creation)
+The workflow is triggered by:
+
+1. When a pull request is labeled with 'ready-for-changeset'
+2. Manually via the GitHub Actions UI using the workflow_dispatch event
+   - Go to Actions > Generate Changeset > Run workflow
+   - Enter the PR number and click "Run workflow"
 
 ## Implementation Options
 
-### Option 1: Using @changesets/cli
+There are two main approaches to implementing changeset generation:
 
-The [Changesets](https://github.com/changesets/changesets) package provides a standardized way to manage versioning and changelogs.
-
-#### Pros:
-- Well-established tool with good documentation
-- Integrates with other tools in the JavaScript ecosystem
-- Provides CLI and GitHub Action
-
-#### Cons:
-- More oriented toward JavaScript/npm packages
-- May require adaptation for WordPress plugin use case
-
-### Option 2: Custom Implementation
-
-Create a custom script that generates changesets in a format specific to our needs.
-
-#### Pros:
-- Can be tailored exactly to WordPress plugin requirements
-- More flexibility in format and storage
-- Can integrate directly with other WordPress-specific workflows
-
-#### Cons:
-- Requires more custom code
-- Need to maintain our own implementation
+1. **Using @changesets/cli package**: A popular solution for managing changesets in JavaScript projects.
+2. **Custom implementation**: A tailored solution that fits specific needs, which is the approach used in this repository.
 
 ## Changeset Format
 
-Regardless of the implementation chosen, each changeset will contain:
+Each changeset is a markdown file stored in the `.changesets` directory with the following format:
 
-```yaml
+```md
 ---
-title: "Original PR title"
+title: "Brief description of the change"
 pr: 123
 author: "username"
-type: "feat|fix|docs|etc"
-description: |
-  Detailed description of the change, extracted from PR description
-  or generated from commit messages.
+type: "feat|fix|chore|docs|refactor|test|style|perf"
 breaking: true|false
 ---
+
+Detailed description of the change...
 ```
+
+### Fields
+
+- **title**: A brief description of the change
+- **pr**: The pull request number
+- **author**: The GitHub username of the PR author
+- **type**: The type of change, following conventional commit types
+- **breaking**: Whether this is a breaking change (true/false)
 
 ## Breaking Change Detection
 
-Breaking changes are automatically detected from:
+Breaking changes are detected by:
 
-1. Conventional commit syntax with ! (e.g., "feat!: Add breaking feature")
-2. Title prefixed with "BREAKING CHANGE:" or "BREAKING-CHANGE:"
-3. Description containing "BREAKING CHANGE:" or "BREAKING-CHANGE:"
-4. Explicit `--breaking=true` flag when generating a changeset
-
-The explicit `breaking` field in the changeset takes precedence over automatic detection. This allows for manual overrides when needed.
+1. Explicit flag in the changeset (`breaking: true`)
+2. Conventional commit prefix with `!` (e.g., `feat!:`)
+3. The phrase "BREAKING CHANGE" in the PR title or body
 
 ## Workflow Steps
 
-1. Detect when a PR is labeled with 'ready-for-changeset'
-2. Extract metadata from the PR:
-   - PR title
-   - PR number
-   - Author
-   - Change type (from semantic PR title)
-   - Description (from PR body)
-   - Breaking change flag (from PR title/body)
-3. Generate changeset file with a unique name (e.g., `{timestamp}-{pr-number}.md`)
-4. Store the changeset in a `.changesets` directory
-5. Commit the changeset file to the `develop` branch
-6. Remove the 'ready-for-changeset' label to prevent duplicate runs
+1. **Detect PR Label**: The workflow runs when a PR is labeled with 'ready-for-changeset' or when manually triggered.
+2. **Extract Metadata**: The workflow extracts relevant information from the PR, including title, author, and body.
+3. **Generate Changeset**: A changeset file is created with the extracted metadata.
+4. **Commit Changeset**: The changeset is committed to the `develop` branch.
+5. **Generate Release Notes**: The `generate-release-notes.js` script processes all changesets to create formatted release notes.
+6. **Update/Create Release PR**: The workflow either updates an existing release PR or creates a new one with the generated release notes.
+7. **Remove Label**: The 'ready-for-changeset' label is removed to prevent duplicate runs.
+
+## Release Notes Generation
+
+The `generate-release-notes.js` script:
+
+1. Reads all changeset files from the `.changesets` directory
+2. Categorizes changes into breaking changes, features, fixes, and other changes
+3. Determines the appropriate version bump type (major, minor, or patch)
+4. Formats the release notes in either Markdown or JSON format
+5. Identifies contributors and first-time contributors
+6. Can be run locally for testing with `npm run release:notes`
+
+### Script Options
+
+The script supports the following command-line options:
+
+- `--format`: Output format (json or markdown, default: markdown)
+- `--repo-url`: Repository URL to use for PR links (overrides package.json)
+- `--token`: GitHub token for API requests (needed to identify first-time contributors)
+
+### Environment Variables
+
+The script also supports the following environment variables:
+
+- `REPO_URL`: Repository URL to use for PR links (can be used instead of `--repo-url`)
+- `GITHUB_TOKEN`: GitHub token for API requests (can be used instead of `--token`)
+
+Using environment variables allows you to set these values once in your environment rather than passing them as command-line arguments each time.
+
+### Contributors Section
+
+The release notes include a special section to acknowledge contributors:
+
+1. **Contributors**: Lists all contributors who made changes in this release
+2. **First-time Contributors**: Gives special recognition to first-time contributors
+
+To identify first-time contributors, the script uses the GitHub API to check if a contributor has made 3 or fewer commits to the repository. This requires a GitHub token to be provided via the `--token` option or the `GITHUB_TOKEN` environment variable.
 
 ## GitHub Action Implementation
 
 ```yaml
 name: Generate Changeset
-
-# This workflow can be triggered in two ways:
-# 1. By adding the 'ready-for-changeset' label to a pull request
-# 2. Manually via the GitHub Actions UI using the workflow_dispatch event
 
 on:
   pull_request:
@@ -97,49 +112,70 @@ on:
   workflow_dispatch:
     inputs:
       pr_number:
-        description: 'PR number to generate changeset for'
+        description: 'Pull Request Number'
         required: true
         type: string
 
 jobs:
   generate-changeset:
-    if: (github.event_name == 'pull_request' && github.event.label.name == 'ready-for-changeset') || github.event_name == 'workflow_dispatch'
+    if: github.event.label.name == 'ready-for-changeset' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          ref: develop
-          token: ${{ secrets.REPO_PAT }}
-          
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16'
-          
-      - name: Install dependencies
-        run: npm ci
-          
-      - name: Extract PR information
-        id: pr_info
-        run: |
-          # Extract PR information code here
-          
-      - name: Generate changeset
-        run: |
-          # Generate changeset code here
-          
-      - name: Commit changeset
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          commit_message: "chore: add changeset for PR #${{ steps.pr_info.outputs.pr_number }}"
-          file_pattern: ".changesets/*.md"
-          
-      - name: Remove label
-        if: github.event_name == 'pull_request'
-        run: |
-          # Remove label code here
+      # Checkout code
+      # Setup Node.js
+      # Install dependencies
+      # Get PR details
+      # Generate changeset
+      # Commit changeset
+      # Generate release notes
+      # Update/Create release PR
+      # Remove label
+```
+
+## Prerequisites
+
+1. Create a 'ready-for-changeset' label in your repository
+2. Set up a Personal Access Token (PAT) with the "repo" scope as a repository secret named `REPO_PAT`
+
+## Local Testing
+
+You can test the release notes generation locally by running:
+
+```bash
+npm run release:notes
+```
+
+For JSON output (used in PR descriptions):
+
+```bash
+npm run release:notes -- --format=json
+```
+
+To specify a custom repository URL for PR links:
+
+```bash
+npm run release:notes -- --repo-url="https://github.com/wp-graphql/automation-tests"
+```
+
+Or using environment variables:
+
+```bash
+export REPO_URL="https://github.com/wp-graphql/automation-tests"
+npm run release:notes
+```
+
+To identify first-time contributors (requires a GitHub token):
+
+```bash
+npm run release:notes -- --token="your_github_token"
+```
+
+Or using environment variables:
+
+```bash
+export GITHUB_TOKEN="your_github_token"
+npm run release:notes
+```
 
 ## Next Steps and Considerations
 
@@ -147,4 +183,27 @@ jobs:
 - Set up a Personal Access Token (PAT) with repo scope as a repository secret named `REPO_PAT`
 - Test workflow with sample PRs
 - Consider how to handle merge conflicts
-- Plan integration with the release workflow 
+- Plan integration with the release workflow
+
+## Workflow Configuration
+
+The workflow is configured to run in two scenarios:
+
+1. When a pull request is merged to any branch (typically develop or main)
+2. Manually via the GitHub Actions UI using the workflow_dispatch event
+
+### Environment Variables
+
+The workflow uses the following environment variables:
+
+- `REPO_URL`: Set to `https://github.com/${{ github.repository }}` to provide the repository URL for generating PR links
+- `GITHUB_TOKEN`: Set to `${{ secrets.REPO_PAT }}` to provide authentication for GitHub API requests
+
+These environment variables are automatically set at the job level and are used by the `generate-release-notes.js` script without needing to pass them as command-line arguments.
+
+### Prerequisites
+
+For the workflow to function correctly, you need to:
+
+1. Create a Personal Access Token (PAT) with `repo` scope
+2. Add this token as a repository secret named `REPO_PAT` 

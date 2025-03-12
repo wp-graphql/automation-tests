@@ -6,6 +6,7 @@
   "scripts": {
     "changeset:generate": "node scripts/generate-changeset.js",
     "changeset:analyze": "node scripts/analyze-changesets.js",
+    "release:notes": "node scripts/generate-release-notes.js",
     "version:bump": "node scripts/bump-version.js",
     "changelog:update": "node scripts/update-changelog.js",
     "readme:update": "node scripts/update-readme.js",

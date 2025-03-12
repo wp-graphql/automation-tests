@@ -40,6 +40,9 @@ jobs:
     needs: [debug-event]
     if: (github.event_name == 'pull_request_target' && github.event.pull_request.merged == true) || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    env:
+      REPO_URL: "https://github.com/${{ github.repository }}"
+      GITHUB_TOKEN: ${{ secrets.REPO_PAT }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -108,24 +111,18 @@ jobs:
             "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
             -d '{"body":"✅ Changeset generated automatically after merge"}'
             
-      - name: Generate temporary changelog
+      - name: Generate release notes
         id: changelog
         run: |
-          # Create a temporary file to store the changelog
-          TEMP_FILE=$(mktemp)
+          # Generate release notes in JSON format for PR body
+          npm run release:notes -- --format=json > changelog_content.json
           
-          # Run the analyze command and capture the output
-          npm run changeset:analyze -- --format=markdown > $TEMP_FILE
-          
-          # Read the file content, skipping the npm script output lines
-          CHANGELOG=$(grep -v "^>" $TEMP_FILE | grep -v "^automation-tests" | grep -v "^$" | tr -d '\r')
-          
-          # Store the changelog in a file for use in the next steps
-          echo "$CHANGELOG" > changelog_content.txt
+          # Also generate markdown format for debugging
+          npm run release:notes > changelog_content.md
           
           # Output the changelog for debugging
-          echo "Generated changelog:"
-          cat changelog_content.txt
+          echo "Generated changelog (markdown format):"
+          cat changelog_content.md
           
       - name: Check for existing release PR
         id: check_pr
@@ -157,8 +154,8 @@ jobs:
           
           PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
           
-          # Read the changelog content
-          CHANGELOG=$(cat changelog_content.txt)
+          # Read the changelog content from JSON file
+          CHANGELOG_JSON=$(cat changelog_content.json)
           
           # Update the PR
           curl -X PATCH \
@@ -166,7 +163,7 @@ jobs:
             -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}" \
             -d "{
-              \"body\": \"## Upcoming Changes\\n\\n${CHANGELOG}\\n\\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch.\"
+              \"body\": \"## Upcoming Changes\\n\\n${CHANGELOG_JSON}\\n\\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch.\"
             }"
             
           echo "Updated existing release PR #${PR_NUMBER} with latest changelog"
@@ -174,8 +171,8 @@ jobs:
       - name: Create new release PR
         if: steps.check_pr.outputs.exists == 'false'
         run: |
-          # Read the changelog content
-          CHANGELOG=$(cat changelog_content.txt)
+          # Read the changelog content from JSON file
+          CHANGELOG_JSON=$(cat changelog_content.json)
           
           # Create a new PR from develop to main
           RESPONSE=$(curl -X POST \
@@ -186,7 +183,7 @@ jobs:
               \"title\": \"release: next version 📦\",
               \"head\": \"develop\",
               \"base\": \"main\",
-              \"body\": \"## Upcoming Changes\\n\\n${CHANGELOG}\\n\\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch.\"
+              \"body\": \"## Upcoming Changes\\n\\n${CHANGELOG_JSON}\\n\\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch.\"
             }")
             
           PR_NUMBER=$(echo "$RESPONSE" | jq -r '.number')
