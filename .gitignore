@@ -25,6 +25,3 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log* 
 
-# Temporary files for release notes
-release_notes_temp.md
-release_notes.md
