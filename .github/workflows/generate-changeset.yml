@@ -158,26 +158,15 @@ jobs:
           
           PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
           
-          # Read the changelog content from markdown file
-          CHANGELOG_CONTENT=$(cat changelog_content.md)
+          # Create the PR body with proper formatting
+          PR_BODY="## Upcoming Changes"
+          PR_BODY="${PR_BODY}"$'\n\n'
+          PR_BODY="${PR_BODY}$(cat changelog_content.md)"
+          PR_BODY="${PR_BODY}"$'\n\n'
+          PR_BODY="${PR_BODY}This PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch."
           
-          # Create a temporary file with the PR body content
-          cat > pr_body.md << 'EOL'
-## Upcoming Changes
-
-EOL
-          
-          # Append the changelog content
-          cat changelog_content.md >> pr_body.md
-          
-          # Append the footer
-          cat >> pr_body.md << 'EOL'
-
-This PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch.
-EOL
-          
-          # Use jq to properly escape the content from the file
-          PAYLOAD=$(jq -n --rawfile body pr_body.md --arg title "$PR_TITLE" '{body: $body, title: $title}')
+          # Use jq to properly escape the content
+          PAYLOAD=$(jq -n --arg body "$PR_BODY" --arg title "$PR_TITLE" '{body: $body, title: $title}')
           
           # For debugging
           echo "API Payload:"
@@ -200,27 +189,19 @@ EOL
       - name: Create new release PR
         if: steps.check_pr.outputs.exists == 'false'
         run: |
-          # Create a temporary file with the PR body content
-          cat > pr_body.md << 'EOL'
-## Upcoming Changes
-
-EOL
+          # Create the PR body with proper formatting
+          PR_BODY="## Upcoming Changes"
+          PR_BODY="${PR_BODY}"$'\n\n'
+          PR_BODY="${PR_BODY}$(cat changelog_content.md)"
+          PR_BODY="${PR_BODY}"$'\n\n'
+          PR_BODY="${PR_BODY}This PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch."
           
-          # Append the changelog content
-          cat changelog_content.md >> pr_body.md
-          
-          # Append the footer
-          cat >> pr_body.md << 'EOL'
-
-This PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch.
-EOL
-          
-          # Use jq to properly escape the content from the file
+          # Use jq to properly escape the content
           PAYLOAD=$(jq -n \
             --arg title "release: next version 📦" \
             --arg head "develop" \
             --arg base "main" \
-            --rawfile body pr_body.md \
+            --arg body "$PR_BODY" \
             '{title: $title, head: $head, base: $base, body: $body}')
           
           # For debugging
