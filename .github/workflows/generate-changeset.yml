@@ -117,11 +117,11 @@ jobs:
       - name: Generate release notes
         id: changelog
         run: |
-          # Generate release notes in JSON format for PR body
-          npm run release:notes -- --format=json > changelog_content.json
-          
-          # Also generate markdown format for debugging
+          # Generate release notes in markdown format for PR body
           npm run release:notes > changelog_content.md
+          
+          # Also generate JSON format for debugging
+          npm run release:notes -- --format=json > changelog_content.json
           
           # Output the changelog for debugging
           echo "Generated changelog (markdown format):"
@@ -157,16 +157,19 @@ jobs:
           
           PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
           
-          # Read the changelog content from JSON file
-          CHANGELOG_JSON=$(cat changelog_content.json)
+          # Read the changelog content from markdown file and preserve newlines
+          CHANGELOG_CONTENT=$(cat changelog_content.md)
           
-          # Properly escape the changelog content for JSON
-          ESCAPED_CHANGELOG=$(echo "$CHANGELOG_JSON" | jq -Rs .)
-          
-          # Create the JSON payload separately
+          # Create the JSON payload for the PR body update
+          # Use jq's @json to properly escape the content
           PAYLOAD=$(jq -n \
-            --arg body "## Upcoming Changes\n\n$(echo $ESCAPED_CHANGELOG | jq -r .)\n\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch." \
-            '{body: $body}')
+            --arg title "$PR_TITLE" \
+            --arg body "## Upcoming Changes
+
+$CHANGELOG_CONTENT
+
+This PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch." \
+            '{title: $title, body: $body}')
           
           # For debugging
           echo "API Payload:"
@@ -189,18 +192,20 @@ jobs:
       - name: Create new release PR
         if: steps.check_pr.outputs.exists == 'false'
         run: |
-          # Read the changelog content from JSON file
-          CHANGELOG_JSON=$(cat changelog_content.json)
+          # Read the changelog content from markdown file and preserve newlines
+          CHANGELOG_CONTENT=$(cat changelog_content.md)
           
-          # Properly escape the changelog content for JSON
-          ESCAPED_CHANGELOG=$(echo "$CHANGELOG_JSON" | jq -Rs .)
-          
-          # Create the JSON payload separately
+          # Create the JSON payload for the PR creation
+          # Use jq's @json to properly escape the content
           PAYLOAD=$(jq -n \
             --arg title "release: next version 📦" \
             --arg head "develop" \
             --arg base "main" \
-            --arg body "## Upcoming Changes\n\n$(echo $ESCAPED_CHANGELOG | jq -r .)\n\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch." \
+            --arg body "## Upcoming Changes
+
+$CHANGELOG_CONTENT
+
+This PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch." \
             '{title: $title, head: $head, base: $base, body: $body}')
           
           # For debugging
