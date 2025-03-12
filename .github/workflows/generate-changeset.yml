@@ -84,49 +84,40 @@ jobs:
           echo "pr_author=${PR_AUTHOR}" >> $GITHUB_OUTPUT
           echo "pr_body=${PR_BODY}" >> $GITHUB_OUTPUT
           
-      - name: Generate changeset
+      - name: Extract release notes from PR body
+        id: extract_notes
         run: |
-          npm run changeset:generate -- \
-            --pr=${{ steps.pr_info.outputs.pr_number }} \
-            --title="${{ steps.pr_info.outputs.pr_title }}" \
-            --author="${{ steps.pr_info.outputs.pr_author }}" \
-            --body="${{ steps.pr_info.outputs.pr_body }}"
-          
-      - name: Commit changeset
-        # The GITHUB_TOKEN is automatically used by this action
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          commit_message: "chore: add changeset for PR #${{ steps.pr_info.outputs.pr_number }}"
-          file_pattern: ".changesets/*.md"
-          branch: ${{ github.event.pull_request.base.ref || 'develop' }}
-          commit_options: '--no-verify'
-          push_options: '--force'
-        env:
-          # Set the GITHUB_TOKEN to GITHUB_TOKEN for better permissions
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Add comment to PR
-        if: github.event_name == 'pull_request_target'
-        run: |
-          curl -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
-            -d '{"body":"✅ Changeset generated automatically after merge"}'
+          if [[ "${{ github.event_name }}" == "pull_request_target" && "${{ github.event.pull_request.base.ref }}" == "main" ]]; then
+            # This is a PR being merged to main, extract the body
+            PR_BODY="${{ github.event.pull_request.body }}"
+          else
+            # For other cases, get the PR body from the release PR
+            PR_LIST=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/${{ github.repository }}/pulls?state=closed&head=${{ github.repository_owner }}:develop&base=main&sort=updated&direction=desc&per_page=1")
             
-      - name: Generate release notes
-        id: changelog
-        run: |
-          # Generate release notes in markdown format for PR body
-          # Skip the npm command output by redirecting stderr to /dev/null and grep out the command line
-          npm run release:notes 2>/dev/null | grep -v "^>" > changelog_content.md
+            PR_NUMBER=$(echo "$PR_LIST" | jq -r '.[0].number')
+            
+            if [[ -z "$PR_NUMBER" || "$PR_NUMBER" == "null" ]]; then
+              echo "No recent merged PR from develop to main found."
+              exit 1
+            fi
+            
+            PR_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}")
+            
+            PR_BODY=$(echo "$PR_DATA" | jq -r '.body')
+          fi
           
-          # Also generate JSON format for debugging
-          npm run release:notes -- --format=json > changelog_content.json
+          # Extract the content between "## Upcoming Changes" and the disclaimer
+          RELEASE_NOTES=$(echo "$PR_BODY" | sed -n '/## Upcoming Changes/,/This PR contains all changes/p' | sed '1d;$d')
           
-          # Output the changelog for debugging
-          echo "Generated changelog (markdown format):"
-          cat changelog_content.md
+          # Save to file for use in later steps
+          echo "$RELEASE_NOTES" > release_notes.md
+          
+          # For debugging
+          echo "Extracted release notes:"
+          cat release_notes.md
           
       - name: Check for existing release PR
         id: check_pr
@@ -161,7 +152,7 @@ jobs:
           # Create the PR body with proper formatting
           PR_BODY="## Upcoming Changes"
           PR_BODY="${PR_BODY}"$'\n\n'
-          PR_BODY="${PR_BODY}$(cat changelog_content.md)"
+          PR_BODY="${PR_BODY}$(cat release_notes.md)"
           PR_BODY="${PR_BODY}"$'\n\n'
           PR_BODY="${PR_BODY}This PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch."
           
@@ -192,7 +183,7 @@ jobs:
           # Create the PR body with proper formatting
           PR_BODY="## Upcoming Changes"
           PR_BODY="${PR_BODY}"$'\n\n'
-          PR_BODY="${PR_BODY}$(cat changelog_content.md)"
+          PR_BODY="${PR_BODY}$(cat release_notes.md)"
           PR_BODY="${PR_BODY}"$'\n\n'
           PR_BODY="${PR_BODY}This PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch."
           
@@ -242,3 +233,67 @@ jobs:
           else
             echo "Created new release PR #${PR_NUMBER} with initial changelog"
           fi
+
+      # Add a step to create a release when merging to main
+      - name: Create GitHub Release
+        if: github.event_name == 'pull_request_target' && github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+        run: |
+          # Get the latest tag
+          git fetch --tags
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          
+          # Extract version number and increment
+          VERSION=$(echo $LATEST_TAG | sed 's/^v//')
+          
+          # Check if this is a breaking change
+          if grep -q "BREAKING CHANGES" release_notes.md; then
+            # Major version bump for breaking changes
+            MAJOR=$(echo $VERSION | cut -d. -f1)
+            NEW_VERSION="$((MAJOR + 1)).0.0"
+          elif grep -q "New Features" release_notes.md; then
+            # Minor version bump for new features
+            MAJOR=$(echo $VERSION | cut -d. -f1)
+            MINOR=$(echo $VERSION | cut -d. -f2)
+            NEW_VERSION="${MAJOR}.$((MINOR + 1)).0"
+          else
+            # Patch version bump for bug fixes
+            MAJOR=$(echo $VERSION | cut -d. -f1)
+            MINOR=$(echo $VERSION | cut -d. -f2)
+            PATCH=$(echo $VERSION | cut -d. -f3)
+            NEW_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
+          fi
+          
+          NEW_TAG="v${NEW_VERSION}"
+          
+          echo "Creating new release with tag: ${NEW_TAG}"
+          
+          # Format release notes - replace "Upcoming Changes" with "Release Notes"
+          RELEASE_BODY=$(cat release_notes.md)
+          
+          # Create the release
+          PAYLOAD=$(jq -n \
+            --arg tag_name "$NEW_TAG" \
+            --arg name "$NEW_TAG" \
+            --arg body "$RELEASE_BODY" \
+            --argjson draft false \
+            --argjson prerelease false \
+            '{tag_name: $tag_name, name: $name, body: $body, draft: $draft, prerelease: $prerelease}')
+          
+          # For debugging
+          echo "Release Payload:"
+          echo "$PAYLOAD" | jq '.'
+          
+          # Create the release
+          RESPONSE=$(curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases" \
+            -d "$PAYLOAD")
+          
+          # Print full response for debugging
+          echo "Full API Response:"
+          echo "$RESPONSE" | jq '.'
+          
+          # Clean up temporary files
+          rm -f release_notes.md
