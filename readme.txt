@@ -3,7 +3,7 @@ Contributors: jasonbahl
 Tags: testing, automation
 Requires at least: 5.0
 Tested up to: 6.2
-Stable tag: 2.0.0
+Stable tag: 2.1.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -26,15 +26,6 @@ This is a test repository for experimenting with GitHub Workflows for WordPress 
 This plugin is a testing ground for GitHub Actions workflows before implementing them in production repositories.
 
 == Upgrade Notice ==
-
-= 2.0.0 =
-
-**⚠️ BREAKING CHANGES**: This release contains breaking changes that may require updates to your code.
-
-* feat!: Add new authentication system (https://github.com/jasonbahl/automation-tests/pull/3)
-* BREAKING CHANGE: Refactor API endpoints (https://github.com/jasonbahl/automation-tests/pull/2)
-
-Please review these changes before upgrading.
 
 = 0.2.1 =
 
@@ -71,25 +62,20 @@ Please review these changes before upgrading.
 
 == Changelog ==
 
-= 2.0.0 =
-
-**⚠️ BREAKING CHANGES**: This release contains breaking changes. Please review before upgrading.
-
-**Breaking Changes**
-
-* BREAKING CHANGE: Refactor authentication system (https://github.com/jasonbahl/automation-tests/pull/1000)
-* BREAKING CHANGE: Refactor API endpoints (https://github.com/jasonbahl/automation-tests/pull/999)
+= 2.1.0 =
 
 **New Features**
 
-* feat: Add script-based workflow automation (https://github.com/jasonbahl/automation-tests/pull/123)
-* feat: Add combined changelog update script (https://github.com/jasonbahl/automation-tests/pull/456)
-* feat: Add new feature (https://github.com/jasonbahl/automation-tests/pull/123)
+* feat: trophy emoji (https://github.com/jasonbahl/automation-tests/pull/25)
 
-**Bug Fixes**
+= 2.0.0 =
 
-* fix: update bug in script that was breaking things (https://github.com/jasonbahl/automation-tests/pull/1001)
-* fix: Prevent duplicate changelog entries (https://github.com/jasonbahl/automation-tests/pull/789)
+**⚠️ BREAKING CHANGES**: This release contains breaking changes that may require updates to your code.
+
+* feat!: Add new authentication system (https://github.com/jasonbahl/automation-tests/pull/3)
+* BREAKING CHANGE: Refactor API endpoints (https://github.com/jasonbahl/automation-tests/pull/2)
+
+Please review these changes before upgrading.
 
 = 1.0.0 =
 
