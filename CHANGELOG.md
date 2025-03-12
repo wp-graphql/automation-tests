@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v3.3.0 - 2025-03-12
+
+### New Features
+
+- feat: sleep emoji ([#41](https://github.com/jasonbahl/automation-tests/pull/41))
+
 ## v3.2.0 - 2025-03-12
 
 ### New Features
