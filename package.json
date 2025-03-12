@@ -1,6 +1,6 @@
 {
   "name": "automation-tests",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "A plugin to test automation workflows",
   "main": "index.js",
   "scripts": {
@@ -13,7 +13,8 @@
     "changelogs:update": "node scripts/update-changelogs.js",
     "build": "node scripts/build.js",
     "release:prepare": "npm run version:bump && npm run changelogs:update",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "upgrade-notice:update": "node scripts/update-upgrade-notice.js"
   },
   "repository": {
     "type": "git",

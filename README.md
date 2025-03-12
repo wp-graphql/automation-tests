@@ -18,6 +18,7 @@ The repository includes several Node.js scripts for automating common tasks:
 - **update-changelog.js**: Updates the CHANGELOG.md file with new entries
 - **update-readme.js**: Updates the readme.txt file with new entries
 - **update-changelogs.js**: Updates both changelog files at once
+- **update-upgrade-notice.js**: Updates the upgrade notice section in readme.txt
 - **build.js**: Builds the plugin for release
 
 ## Breaking Change Detection
@@ -51,6 +52,8 @@ The repository implements several GitHub Actions workflows:
   - Extracts release notes from PR body when merging to main
   - Creates GitHub releases with proper tagging
   - Deletes processed changesets to prevent duplicate changelog entries
+  - Adds breaking changes to the upgrade notice section in readme.txt
+  - Removes unnecessary lines from release notes
 - **Deploy**: Handles deployment to various environments
 
 ## Development Process
@@ -97,6 +100,9 @@ npm run version:bump -- --type=minor
 
 # Update changelogs
 npm run changelogs:update
+
+# Update upgrade notice in readme.txt
+npm run upgrade-notice:update -- --version=1.0.0 --notes-file=release_notes.md
 ```
 
 ## Environment Variables
@@ -171,6 +177,8 @@ We've made several significant improvements to the changeset generation workflow
 - Use of temporary files to keep the repository clean
 - Automatic PR creation and updating
 - Deletion of processed changesets to prevent duplicate changelog entries
+- Enhanced release notes formatting with unnecessary lines removed
+- Automatic addition of breaking changes to the upgrade notice section
 - Comprehensive documentation updates
 
 These improvements make the changeset generation process more reliable, user-friendly, and informative, enhancing the overall development workflow. 

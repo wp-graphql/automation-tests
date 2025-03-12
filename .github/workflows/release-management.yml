@@ -94,6 +94,11 @@ jobs:
           
       - name: Update changelogs
         run: |
+          # First, check if this is a breaking change release by using our new script
+          # This will automatically update the upgrade notice section if breaking changes are found
+          npm run upgrade-notice:update -- --version=${{ steps.version_bump.outputs.version }} --notes-file=release_notes_temp.md
+          
+          # Now update the changelogs as usual
           npm run changelogs:update -- --version=${{ steps.version_bump.outputs.version }}
           
       # Generate release notes BEFORE archiving changesets

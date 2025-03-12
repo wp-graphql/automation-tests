@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v3.1.0 - 2025-03-12
+
+### New Features
+
+- feat: sun emoji ([#33](https://github.com/jasonbahl/automation-tests/pull/33))
+
 ## v3.0.0 - 2025-03-12
 
 > ⚠️ **BREAKING CHANGES**: This release contains breaking changes. Please review before upgrading.

@@ -1,17 +1,13 @@
 
 
 
-
-Found 2 changesets.
+Found 1 changesets.
 ## Changelog
 
-**Bump Type:** major
+**Bump Type:** minor
 
-### ⚠️ BREAKING CHANGES
-- fix!: pray emoji ([#29](https://github.com/wp-graphql/automation-tests/pull/29))
-
-### 🐛 Bug Fixes
-- fix: fire emoji ([#27](https://github.com/wp-graphql/automation-tests/pull/27))
+### ✨ New Features
+- feat: sun emoji ([#33](https://github.com/wp-graphql/automation-tests/pull/33))
 
 ### 👏 Contributors
 
