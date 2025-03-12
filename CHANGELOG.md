@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v3.2.0 - 2025-03-12
+
+### New Features
+
+- feat: santa emoji ([#39](https://github.com/jasonbahl/automation-tests/pull/39))
+
 ## v3.1.0 - 2025-03-12
 
 ### New Features
