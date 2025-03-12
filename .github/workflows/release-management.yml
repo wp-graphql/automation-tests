@@ -96,7 +96,7 @@ jobs:
         run: |
           # First, check if this is a breaking change release by using our new script
           # This will automatically update the upgrade notice section if breaking changes are found
-          npm run upgrade-notice:update -- --version=${{ steps.version_bump.outputs.version }} --notes-file=release_notes_temp.md
+          npm run upgrade-notice:update -- --version=${{ steps.version_bump.outputs.version }} --notes-file=/tmp/release-notes/release_notes.md
           
           # Now update the changelogs as usual
           npm run changelogs:update -- --version=${{ steps.version_bump.outputs.version }}
@@ -105,6 +105,9 @@ jobs:
       - name: Generate release notes
         id: release_notes
         run: |
+          # Create a temporary directory outside the repository
+          mkdir -p /tmp/release-notes
+          
           # Check if this is a PR from develop to main
           if [[ "${{ github.event_name }}" == "pull_request_target" && "${{ github.event.pull_request.head.ref }}" == "develop" ]]; then
             # Extract release notes from the PR body
@@ -113,36 +116,35 @@ jobs:
             # Extract the content between "## Upcoming Changes" and the disclaimer
             RELEASE_NOTES=$(echo "$PR_BODY" | sed -n '/## Upcoming Changes/,/This PR contains all changes/p' | sed '1d;$d')
             
-            # Save to file for use in later steps
-            echo "$RELEASE_NOTES" > release_notes_temp.md
+            # Save to file for use in later steps (in temporary directory)
+            echo "$RELEASE_NOTES" > /tmp/release-notes/release_notes.md
           else
-            # Create a temporary file for the release notes
             # Generate release notes in markdown format for release body
             # Skip the npm command output by redirecting stderr to /dev/null and grep out the command line
-            npm run release:notes 2>/dev/null | grep -v "^>" > release_notes_temp.md
+            npm run release:notes 2>/dev/null | grep -v "^>" > /tmp/release-notes/release_notes.md
           fi
           
           # Check if the file has content
-          if [ ! -s release_notes_temp.md ]; then
+          if [ ! -s /tmp/release-notes/release_notes.md ]; then
             # If empty, provide a default message
-            echo "## Release Notes" > release_notes_temp.md
-            echo "" >> release_notes_temp.md
-            echo "No changesets found. No changes to release at this time." >> release_notes_temp.md
+            echo "## Release Notes" > /tmp/release-notes/release_notes.md
+            echo "" >> /tmp/release-notes/release_notes.md
+            echo "No changesets found. No changes to release at this time." >> /tmp/release-notes/release_notes.md
           else
             # If there is content, replace "Upcoming Changes" with "Release Notes" if present
-            sed -i 's/## Upcoming Changes/## Release Notes/g' release_notes_temp.md
+            sed -i 's/## Upcoming Changes/## Release Notes/g' /tmp/release-notes/release_notes.md
             
             # Remove the note about PR updates if present
-            sed -i '/This PR contains all changes that will be included in the next release/d' release_notes_temp.md
+            sed -i '/This PR contains all changes that will be included in the next release/d' /tmp/release-notes/release_notes.md
           fi
           
           # For debugging
           echo "Generated release notes:"
-          cat release_notes_temp.md
+          cat /tmp/release-notes/release_notes.md
           
           # Set the content for GitHub Actions output
           # Properly escape the content for GitHub Actions
-          RELEASE_NOTES=$(cat release_notes_temp.md)
+          RELEASE_NOTES=$(cat /tmp/release-notes/release_notes.md)
           RELEASE_NOTES="${RELEASE_NOTES//'%'/'%25'}"
           RELEASE_NOTES="${RELEASE_NOTES//$'\n'/'%0A'}"
           RELEASE_NOTES="${RELEASE_NOTES//$'\r'/'%0D'}"
@@ -205,7 +207,7 @@ jobs:
         with:
           tag_name: v${{ steps.version_bump.outputs.version }}
           release_name: Release v${{ steps.version_bump.outputs.version }}
-          body_path: release_notes_temp.md
+          body_path: /tmp/release-notes/release_notes.md
           draft: false
           prerelease: false
           
