@@ -118,7 +118,8 @@ jobs:
         id: changelog
         run: |
           # Generate release notes in markdown format for PR body
-          npm run release:notes > changelog_content.md
+          # Skip the npm command output by redirecting stderr to /dev/null and grep out the command line
+          npm run release:notes 2>/dev/null | grep -v "^>" > changelog_content.md
           
           # Also generate JSON format for debugging
           npm run release:notes -- --format=json > changelog_content.json
@@ -160,14 +161,23 @@ jobs:
           # Read the changelog content from markdown file
           CHANGELOG_CONTENT=$(cat changelog_content.md)
           
-          # Escape newlines for JSON
-          CHANGELOG_CONTENT="${CHANGELOG_CONTENT//$'\n'/\\n}"
+          # Create a temporary file with the PR body content
+          cat > pr_body.md << 'EOL'
+## Upcoming Changes
+
+EOL
           
-          # Create the JSON payload for the PR body update
-          BODY_TEXT="## Upcoming Changes\n\n${CHANGELOG_CONTENT}\n\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch."
+          # Append the changelog content
+          cat changelog_content.md >> pr_body.md
           
-          # Use jq to properly escape the content
-          PAYLOAD=$(jq -n --arg body "$BODY_TEXT" --arg title "$PR_TITLE" '{body: $body, title: $title}')
+          # Append the footer
+          cat >> pr_body.md << 'EOL'
+
+This PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch.
+EOL
+          
+          # Use jq to properly escape the content from the file
+          PAYLOAD=$(jq -n --rawfile body pr_body.md --arg title "$PR_TITLE" '{body: $body, title: $title}')
           
           # For debugging
           echo "API Payload:"
@@ -190,21 +200,27 @@ jobs:
       - name: Create new release PR
         if: steps.check_pr.outputs.exists == 'false'
         run: |
-          # Read the changelog content from markdown file
-          CHANGELOG_CONTENT=$(cat changelog_content.md)
+          # Create a temporary file with the PR body content
+          cat > pr_body.md << 'EOL'
+## Upcoming Changes
+
+EOL
           
-          # Escape newlines for JSON
-          CHANGELOG_CONTENT="${CHANGELOG_CONTENT//$'\n'/\\n}"
+          # Append the changelog content
+          cat changelog_content.md >> pr_body.md
           
-          # Create the JSON payload for the PR creation
-          BODY_TEXT="## Upcoming Changes\n\n${CHANGELOG_CONTENT}\n\nThis PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch."
+          # Append the footer
+          cat >> pr_body.md << 'EOL'
+
+This PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch.
+EOL
           
-          # Use jq to properly escape the content
+          # Use jq to properly escape the content from the file
           PAYLOAD=$(jq -n \
             --arg title "release: next version 📦" \
             --arg head "develop" \
             --arg base "main" \
-            --arg body "$BODY_TEXT" \
+            --rawfile body pr_body.md \
             '{title: $title, head: $head, base: $base, body: $body}')
           
           # For debugging
