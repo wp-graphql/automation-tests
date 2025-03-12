@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.2.1 - 2025-03-12
+
+### Bug Fixes
+
+- fix: fire emoji ([#27](https://github.com/jasonbahl/automation-tests/pull/27))
+
 ## v2.2.0 - 2025-03-12
 
 ### New Features
