@@ -14,14 +14,17 @@
 ## GitHub Workflows
 
 - Modified `generate-changeset.yml` to:
-  - Use label-based trigger ('ready-for-changeset') instead of PR merge
-  - Improve permissions handling with Personal Access Token (PAT)
-  - Automatically remove label after generating changeset
-  - Use the new `generate-release-notes.js` script for better formatted release notes
+  - Use PR merge trigger instead of label-based trigger
+  - Improve permissions handling with GitHub token
+  - Generate changesets for merged PRs
+  - Use temporary files for release notes to keep the repository clean
+  - Use the `generate-release-notes.js` script for better formatted release notes
+  - Automatically create or update a release PR from develop to main
 - Improved `release-management.yml` for automating version bumping and changelog updates:
+  - Extract release notes from PR body when merging to main
   - Auto-detect version bump type from changesets
   - Update both CHANGELOG.md and readme.txt
-  - Create release PR with formatted changelog
+  - Create GitHub release with formatted release notes
 - Updated `deploy.yml` for handling deployments:
   - Deploy to WordPress.org SVN
   - Create GitHub release with assets
@@ -31,7 +34,7 @@
 
 - Updated README.md with comprehensive overview of the project
 - Created detailed workflow documentation:
-  - Changeset generation process
+  - Changeset generation process with temporary file handling
   - Release management workflow
   - Deployment process
 - Added examples and usage instructions for all scripts
@@ -52,6 +55,7 @@
 - **Flexibility**: Workflows can be customized without changing the core logic
 - **Consistency**: Ensures standardized processes for versioning and releases
 - **Efficiency**: Combined operations reduce duplication and potential for inconsistencies
+- **Cleanliness**: Use of temporary files keeps the repository clean
 
 ## Next Steps
 - Test scripts with various scenarios to ensure robustness
@@ -65,4 +69,5 @@
 - **Environment Variables Support**: Added support for environment variables (`REPO_URL` and `GITHUB_TOKEN`) to simplify configuration and usage of the release notes script.
 - **Contributor Recognition**: Enhanced release notes to include a contributors section with special recognition for first-time contributors.
 - **GitHub Workflow Improvements**: Updated the GitHub workflow to use environment variables instead of command-line arguments, making it cleaner and more maintainable.
+- **Temporary File Handling**: Improved the workflow to use temporary files for release notes, keeping the repository clean.
 - **Documentation Updates**: Comprehensive documentation updates to reflect new features and options. 

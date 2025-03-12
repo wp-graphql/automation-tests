@@ -100,10 +100,22 @@ jobs:
       - name: Generate release notes
         id: release_notes
         run: |
-          # Create a temporary file for the release notes
-          # Generate release notes in markdown format for release body
-          # Skip the npm command output by redirecting stderr to /dev/null and grep out the command line
-          npm run release:notes 2>/dev/null | grep -v "^>" > release_notes_temp.md
+          # Check if this is a PR from develop to main
+          if [[ "${{ github.event_name }}" == "pull_request_target" && "${{ github.event.pull_request.head.ref }}" == "develop" ]]; then
+            # Extract release notes from the PR body
+            PR_BODY="${{ github.event.pull_request.body }}"
+            
+            # Extract the content between "## Upcoming Changes" and the disclaimer
+            RELEASE_NOTES=$(echo "$PR_BODY" | sed -n '/## Upcoming Changes/,/This PR contains all changes/p' | sed '1d;$d')
+            
+            # Save to file for use in later steps
+            echo "$RELEASE_NOTES" > release_notes_temp.md
+          else
+            # Create a temporary file for the release notes
+            # Generate release notes in markdown format for release body
+            # Skip the npm command output by redirecting stderr to /dev/null and grep out the command line
+            npm run release:notes 2>/dev/null | grep -v "^>" > release_notes_temp.md
+          fi
           
           # Check if the file has content
           if [ ! -s release_notes_temp.md ]; then

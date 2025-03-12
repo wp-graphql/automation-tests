@@ -42,19 +42,26 @@ Changelogs are formatted according to WordPress plugin repository standards:
 
 The repository implements several GitHub Actions workflows:
 
-- **Changeset Generation**: Generates changesets when PRs are labeled with 'ready-for-changeset'
+- **Changeset Generation**: Generates changesets when PRs are merged to develop
+  - Creates a changeset file for the PR
+  - Generates release notes from all changesets
+  - Creates or updates a release PR from develop to main
+  - Uses temporary files to keep the repository clean
 - **Release Management**: Automates version bumping and changelog updates
+  - Extracts release notes from PR body when merging to main
+  - Creates GitHub releases with proper tagging
 - **Deploy**: Handles deployment to various environments
 
 ## Development Process
 
 1. Create a feature branch from `develop`
 2. Make changes and submit a PR to `develop`
-3. Add the 'ready-for-changeset' label to the PR to generate a changeset
-4. When the PR is merged, the changeset is committed to `develop`
-5. When ready for release, a release PR is created from `develop` to `main`
-6. The release PR includes all changes from changesets with proper formatting
-7. After merging the release PR, the plugin is tagged and released
+3. When the PR is merged, a changeset is automatically generated
+4. The changeset is committed to `develop`
+5. A release PR is created or updated from `develop` to `main`
+6. When ready for release, merge the release PR to `main`
+7. The release management workflow creates a tag and GitHub release
+8. The plugin is deployed to the appropriate environments
 
 ## Local Testing
 
@@ -160,6 +167,8 @@ We've made several significant improvements to the changeset generation workflow
 - Cleaner GitHub workflow configuration
 - Better error handling and fallbacks
 - Direct file processing instead of relying on external scripts
+- Use of temporary files to keep the repository clean
+- Automatic PR creation and updating
 - Comprehensive documentation updates
 
 These improvements make the changeset generation process more reliable, user-friendly, and informative, enhancing the overall development workflow. 

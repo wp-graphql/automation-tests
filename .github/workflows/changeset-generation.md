@@ -56,13 +56,12 @@ Breaking changes are detected by:
 
 ## Workflow Steps
 
-1. **Detect PR Label**: The workflow runs when a PR is labeled with 'ready-for-changeset' or when manually triggered.
+1. **Detect PR Merge**: The workflow runs when a PR is merged or when manually triggered.
 2. **Extract Metadata**: The workflow extracts relevant information from the PR, including title, author, and body.
 3. **Generate Changeset**: A changeset file is created with the extracted metadata.
-4. **Commit Changeset**: The changeset is committed to the `develop` branch.
-5. **Generate Release Notes**: The `generate-release-notes.js` script processes all changesets to create formatted release notes.
+4. **Commit Changeset**: The changeset is committed to the branch (typically `develop`).
+5. **Generate Release Notes**: The `release:notes` script processes all changesets to create formatted release notes in a temporary file.
 6. **Update/Create Release PR**: The workflow either updates an existing release PR or creates a new one with the generated release notes.
-7. **Remove Label**: The 'ready-for-changeset' label is removed to prevent duplicate runs.
 
 ## Release Notes Generation
 
@@ -107,8 +106,8 @@ To identify first-time contributors, the script uses the GitHub API to check if 
 name: Generate Changeset
 
 on:
-  pull_request:
-    types: [labeled]
+  pull_request_target:
+    types: [closed]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -118,8 +117,11 @@ on:
 
 jobs:
   generate-changeset:
-    if: github.event.label.name == 'ready-for-changeset' || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'pull_request_target' && github.event.pull_request.merged == true) || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    env:
+      REPO_URL: "https://github.com/${{ github.repository }}"
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       # Checkout code
       # Setup Node.js
@@ -127,10 +129,20 @@ jobs:
       # Get PR details
       # Generate changeset
       # Commit changeset
-      # Generate release notes
+      # Generate release notes to temporary file
+      # Check for existing release PR
       # Update/Create release PR
-      # Remove label
 ```
+
+## Temporary Files
+
+The workflow uses temporary files to store release notes during execution:
+
+1. Release notes are generated to a temporary directory (`/tmp/release-notes`)
+2. These files are not committed to the repository
+3. The temporary files are automatically cleaned up after the workflow completes
+
+This approach keeps the repository clean while still allowing the workflow to process and use the release notes.
 
 ## Prerequisites
 
