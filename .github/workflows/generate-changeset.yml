@@ -37,6 +37,9 @@ jobs:
           echo "PR title: ${{ github.event.pull_request.title }}"
 
   generate-changeset:
+    permissions:
+      contents: write
+      pull-requests: write
     needs: [debug-event]
     if: (github.event_name == 'pull_request_target' && github.event.pull_request.merged == true) || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
