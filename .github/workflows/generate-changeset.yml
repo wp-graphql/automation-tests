@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       REPO_URL: "https://github.com/${{ github.repository }}"
-      GITHUB_TOKEN: ${{ secrets.REPO_PAT }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -53,7 +53,7 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.base.ref || 'develop' }}
           # Use a personal access token with repo scope for better permissions
-          token: ${{ secrets.REPO_PAT }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -72,7 +72,7 @@ jobs:
             PR_NUMBER="${{ github.event.pull_request.number }}"
           fi
           
-          PR_DATA=$(curl -s -H "Authorization: token ${{ secrets.REPO_PAT }}" \
+          PR_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}")
           
           PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
@@ -102,14 +102,14 @@ jobs:
           commit_options: '--no-verify'
           push_options: '--force'
         env:
-          # Set the GITHUB_TOKEN to REPO_PAT for better permissions
-          GITHUB_TOKEN: ${{ secrets.REPO_PAT }}
+          # Set the GITHUB_TOKEN to GITHUB_TOKEN for better permissions
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Add comment to PR
         if: github.event_name == 'pull_request_target'
         run: |
           curl -X POST \
-            -H "Authorization: token ${{ secrets.REPO_PAT }}" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
             -d '{"body":"✅ Changeset generated automatically after merge"}'
@@ -131,7 +131,7 @@ jobs:
         id: check_pr
         run: |
           # Check if there's already a PR from develop to main
-          PR_LIST=$(curl -s -H "Authorization: token ${{ secrets.REPO_PAT }}" \
+          PR_LIST=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/pulls?state=open&head=${{ github.repository_owner }}:develop&base=main")
           
@@ -152,7 +152,7 @@ jobs:
           PR_NUMBER="${{ steps.check_pr.outputs.number }}"
           
           # Get current PR data
-          PR_DATA=$(curl -s -H "Authorization: token ${{ secrets.REPO_PAT }}" \
+          PR_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}")
           
           PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
@@ -162,7 +162,7 @@ jobs:
           
           # Update the PR
           curl -X PATCH \
-            -H "Authorization: token ${{ secrets.REPO_PAT }}" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}" \
             -d "{
@@ -179,7 +179,7 @@ jobs:
           
           # Create a new PR from develop to main
           RESPONSE=$(curl -X POST \
-            -H "Authorization: token ${{ secrets.REPO_PAT }}" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/pulls" \
             -d "{

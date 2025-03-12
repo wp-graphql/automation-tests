@@ -28,6 +28,20 @@ const path = require('path');
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
 
+// Load environment variables from .env file if running locally
+try {
+  if (fs.existsSync(path.join(process.cwd(), '.env'))) {
+    require('dotenv').config();
+    console.log('Loaded environment variables from .env file');
+  }
+} catch (error) {
+  console.warn('Warning: Could not load .env file', error.message);
+}
+
+// Get GitHub token from environment variables
+// This will work with both GitHub Actions (GITHUB_TOKEN) and local .env file
+const githubToken = process.env.GITHUB_TOKEN || '';
+
 // Parse command line arguments
 const argv = yargs(hideBin(process.argv))
   .option('pr', {
