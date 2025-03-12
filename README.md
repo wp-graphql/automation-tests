@@ -39,22 +39,23 @@ Changelogs are formatted according to WordPress plugin repository standards:
   - Links to pull requests
   - Contributors acknowledgment with special recognition for first-time contributors
 
-## Workflows
+## Release Management
 
-The repository implements several GitHub Actions workflows:
+This repository uses an automated release management system based on [changesets](https://github.com/changesets/changesets). The process works as follows:
 
-- **Changeset Generation**: Generates changesets when PRs are merged to develop
-  - Creates a changeset file for the PR
-  - Generates release notes from all changesets
-  - Creates or updates a release PR from develop to main
-  - Uses temporary files to keep the repository clean
-- **Release Management**: Automates version bumping and changelog updates
-  - Extracts release notes from PR body when merging to main
-  - Creates GitHub releases with proper tagging
-  - Deletes processed changesets to prevent duplicate changelog entries
-  - Adds breaking changes to the upgrade notice section in readme.txt
-  - Removes unnecessary lines from release notes
-- **Deploy**: Handles deployment to various environments
+1. **Automatic Changeset Generation**: Changesets are automatically generated when PRs are merged to the develop branch.
+2. **Accumulating Changes**: Changesets accumulate in the develop branch until a release is ready.
+3. **Release PR**: A PR from develop to main is created, containing all the changesets.
+4. **Automated Release**: When the PR is merged, the release workflow:
+   - Bumps the version based on the changesets
+   - Updates changelogs
+   - Creates a GitHub release with release notes
+   - Deletes the processed changesets from main
+   - Syncs main back to develop to ensure both branches are in sync
+
+This ensures a consistent and automated release process with proper versioning and documentation.
+
+For more details on the release process, see [.github/workflows/release-management.md](.github/workflows/release-management.md).
 
 ## Development Process
 

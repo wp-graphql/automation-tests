@@ -12,23 +12,12 @@
 - Created `update-upgrade-notice.js` for updating the upgrade notice section in readme.txt
 - Created `build.js` for building the plugin for release
 
-## GitHub Workflows
+## Workflows
 
-- Modified `generate-changeset.yml` to:
-  - Use PR merge trigger instead of label-based trigger
-  - Improve permissions handling with GitHub token
-  - Generate changesets for merged PRs
-  - Use temporary files for release notes to keep the repository clean
-  - Use the `generate-release-notes.js` script for better formatted release notes
-  - Automatically create or update a release PR from develop to main
-- Improved `release-management.yml` for automating version bumping and changelog updates:
-  - Extract release notes from PR body when merging to main
-  - Auto-detect version bump type from changesets
-  - Update both CHANGELOG.md and readme.txt
-  - Add breaking changes to the upgrade notice section in readme.txt
-  - Remove unnecessary lines from release notes
-  - Create GitHub release with formatted release notes
-  - Delete processed changesets to prevent duplicate changelog entries
+- **generate-changeset.yml**: Automatically generates a changeset file when a PR is merged to develop.
+- **release-management.yml**: Handles version bumping, changelog updates, and release creation when changes are merged to main.
+  - Now includes improved sync between main and develop branches after releases
+  - Uses temporary directory for release notes to avoid Git tracking issues
 - Updated `deploy.yml` for handling deployments:
   - Deploy to WordPress.org SVN
   - Create GitHub release with assets
