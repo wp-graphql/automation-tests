@@ -66,8 +66,6 @@ function readChangesets() {
     return [];
   }
   
-  console.log(`Found ${changesetFiles.length} changesets.`);
-  
   return changesetFiles.map(file => {
     const content = fs.readFileSync(path.join(changesetDir, file), 'utf8');
     const frontMatter = content.match(/---\n([\s\S]*?)\n---/);

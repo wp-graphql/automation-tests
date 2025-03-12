@@ -37,11 +37,15 @@ The Release Management workflow is responsible for collecting changesets, determ
 ### 4. Generate Changelog
 
 - Use the extracted release notes or generate formatted changelog entries from changesets
+- Remove unnecessary lines like "Found X changesets" from the release notes
 - Update `CHANGELOG.md` with new entries
 - Update `readme.txt` with new entries
 - Include full links to PRs (e.g., `https://github.com/username/repo/pull/123`)
 - Highlight breaking changes with prominent warnings
 - Add upgrade notice section for breaking changes in `readme.txt`
+  - Automatically extract breaking changes from the release notes
+  - Format them appropriately for the WordPress.org readme.txt format
+  - Add them to the "Upgrade Notice" section
 - Categorize changes by type (breaking changes, features, bug fixes)
 
 ### 5. Build Process

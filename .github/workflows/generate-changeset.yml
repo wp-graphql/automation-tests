@@ -114,7 +114,10 @@ jobs:
           mkdir -p /tmp/release-notes
           
           # Generate release notes from all changesets to a temporary file
-          npm run release:notes 2>/dev/null | grep -v "^>" > /tmp/release-notes/temp_notes.md
+          npm run release:notes 2>/dev/null | grep -v "^>" > /tmp/release-notes/temp_notes_raw.md
+          
+          # Remove the "Found X changesets" line
+          sed -n '/^Found/!p' /tmp/release-notes/temp_notes_raw.md > /tmp/release-notes/temp_notes.md
           
           # For debugging
           echo "Generated release notes:"

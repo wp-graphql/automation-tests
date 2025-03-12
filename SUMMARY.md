@@ -9,6 +9,7 @@
 - Created `update-changelog.js` for updating CHANGELOG.md with new entries
 - Created `update-readme.js` for updating readme.txt with new entries
 - Created `update-changelogs.js` for updating both changelog files at once
+- Created `update-upgrade-notice.js` for updating the upgrade notice section in readme.txt
 - Created `build.js` for building the plugin for release
 
 ## GitHub Workflows
@@ -24,6 +25,8 @@
   - Extract release notes from PR body when merging to main
   - Auto-detect version bump type from changesets
   - Update both CHANGELOG.md and readme.txt
+  - Add breaking changes to the upgrade notice section in readme.txt
+  - Remove unnecessary lines from release notes
   - Create GitHub release with formatted release notes
   - Delete processed changesets to prevent duplicate changelog entries
 - Updated `deploy.yml` for handling deployments:
@@ -72,4 +75,6 @@
 - **GitHub Workflow Improvements**: Updated the GitHub workflow to use environment variables instead of command-line arguments, making it cleaner and more maintainable.
 - **Temporary File Handling**: Improved the workflow to use temporary files for release notes, keeping the repository clean.
 - **Changeset Cleanup**: Changed from archiving changesets to deleting them after a release to prevent duplicate changelog entries.
+- **Release Notes Formatting**: Removed unnecessary "Found X changesets" line from release notes.
+- **Upgrade Notice Enhancement**: Automatically add breaking changes to the upgrade notice section in readme.txt.
 - **Documentation Updates**: Comprehensive documentation updates to reflect new features and options. 
