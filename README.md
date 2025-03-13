@@ -29,6 +29,11 @@ Breaking changes are automatically detected from:
 2. Title prefixed with "BREAKING CHANGE:" or containing "BREAKING CHANGE:"
 3. Explicit `breaking: true` flag in changesets
 
+When breaking changes are detected, they are:
+- Highlighted in the release notes
+- Categorized separately in the changelog
+- Automatically added to the upgrade notice section in readme.txt to warn users
+
 ## Changelog Formatting
 
 Changelogs are formatted according to WordPress plugin repository standards:
@@ -38,6 +43,18 @@ Changelogs are formatted according to WordPress plugin repository standards:
   - Categorized changes (breaking changes, features, fixes, other)
   - Links to pull requests
   - Contributors acknowledgment with special recognition for first-time contributors
+
+## Release Notes
+
+Release notes are generated from changesets and include:
+
+- **Categorized Changes**: Breaking changes, features, fixes, and other changes
+- **Emoji Icons**: Visual indicators for different change types (⚠️ for breaking changes, ✨ for features, etc.)
+- **PR Links**: Full URLs to pull requests for easy reference
+- **Contributors Section**: Lists all contributors with special recognition for first-time contributors
+- **Automatic Formatting**: Unnecessary lines are removed for cleaner presentation
+
+Release notes can be generated in both Markdown format (for GitHub releases) and JSON format (for programmatic use).
 
 ## Release Management
 
@@ -52,6 +69,12 @@ This repository uses an automated release management system based on [changesets
    - Creates a GitHub release with release notes
    - Deletes the processed changesets from main
    - Syncs main back to develop to ensure both branches are in sync
+
+5. **Branch Synchronization**: After a release, the main branch is automatically merged back into develop:
+   - This ensures that version bumps and changelog updates are reflected in develop
+   - The merge uses a non-fast-forward strategy with a descriptive commit message
+   - The commit message includes [skip ci] to prevent triggering additional workflows
+   - This keeps both branches in sync and prevents divergence
 
 This ensures a consistent and automated release process with proper versioning and documentation.
 
@@ -111,7 +134,14 @@ npm run upgrade-notice:update -- --version=1.0.0 --notes-file=release_notes.md
 The scripts support the following environment variables:
 
 - `REPO_URL`: Repository URL to use for PR links (used by `generate-release-notes.js`)
+  - This is used to generate full URLs to pull requests in release notes
+  - If not provided, the script will attempt to extract it from package.json
+  - Example: `https://github.com/wp-graphql/automation-tests`
+
 - `GITHUB_TOKEN`: GitHub token for API requests (used by `generate-release-notes.js` for contributor recognition)
+  - This is used to identify first-time contributors (3 or fewer commits)
+  - If not provided, the contributors section will still be included but without first-time contributor recognition
+  - You can create a personal access token in your GitHub account settings
 
 You can set these variables in your environment or in a `.env` file to avoid passing them as command-line arguments each time.
 
@@ -128,7 +158,6 @@ You can set these variables in your environment or in a `.env` file to avoid pas
 │       ├── deploy.yml              # Deploys plugin
 │       └── README.md               # Workflow documentation
 ├── .changesets/                    # Stores changesets
-│   └── archive/                    # Archives processed changesets
 ├── scripts/                        # Node.js scripts
 │   ├── generate-changeset.js       # Generate changeset file
 │   ├── generate-release-notes.js   # Generate release notes from changesets
@@ -157,7 +186,11 @@ We've made several significant improvements to the changeset generation workflow
 
 ### 1. Environment Variables Support
 - Added support for `REPO_URL` and `GITHUB_TOKEN` environment variables
+  - `REPO_URL` is used to generate proper links to pull requests in release notes
+  - `GITHUB_TOKEN` is used to identify contributor status via the GitHub API
 - Simplified configuration by setting values once in the environment
+  - Environment variables are set at the job level in GitHub Actions workflows
+  - This eliminates the need to pass them as command-line arguments to scripts
 - Reduced command-line complexity in the GitHub workflow
 
 ### 2. Contributor Recognition
@@ -176,6 +209,8 @@ We've made several significant improvements to the changeset generation workflow
 - Better error handling and fallbacks
 - Direct file processing instead of relying on external scripts
 - Use of temporary files to keep the repository clean
+  - Release notes are generated in a temporary directory outside the repository (`/tmp/release-notes/`)
+  - This prevents Git from tracking these temporary files and avoids issues with `.gitignore`
 - Automatic PR creation and updating
 - Deletion of processed changesets to prevent duplicate changelog entries
 - Enhanced release notes formatting with unnecessary lines removed

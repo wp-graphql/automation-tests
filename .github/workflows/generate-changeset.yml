@@ -14,6 +14,8 @@ on:
   # - SECURITY NOTE: Be careful when checking out PR code with this event type
   pull_request_target:
     types: [closed]
+    branches:
+      - develop
   workflow_dispatch:
     inputs:
       pr_number:
