@@ -198,26 +198,26 @@ flowchart TD
 
 ```mermaid
 gitGraph
-    commit
+    commit id: "Initial commit"
     branch develop
     checkout develop
-    commit
-    commit
-    commit
-    commit
-    commit
+    commit id: "Feature 1"
+    commit id: "Feature 2"
+    commit id: "Generate changeset for Feature 2"
+    commit id: "Feature 3"
+    commit id: "Generate changeset for Feature 3"
     checkout main
     merge develop
-    commit tag: "v1.0.0"
+    commit tag: "v1.0.0" id: "v1.0.0"
     checkout develop
-    commit
-    commit
-    commit
+    merge main id: "Sync v1.0.0 back to develop"
+    commit id: "Feature 4"
+    commit id: "Generate changeset for Feature 4"
     checkout main
     merge develop
-    commit tag: "v1.1.0"
+    commit tag: "v1.1.0" id: "v1.1.0"
     checkout develop
-    merge main
+    merge main id: "Sync v1.1.0 back to develop"
 ```
 
 These visualizations provide a comprehensive overview of how the different components of the automation system interact. They can be especially helpful for new contributors to understand the workflow and for maintainers to identify potential areas for improvement. 
