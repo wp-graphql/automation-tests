@@ -409,6 +409,8 @@ This ensures a consistent and automated release process with proper versioning a
 
 For more details on the release process, see [.github/workflows/release-management.md](.github/workflows/release-management.md).
 
+For visual representations of the workflows, see [docs/WORKFLOW_VISUALIZATION.md](docs/WORKFLOW_VISUALIZATION.md).
+
 ## Development Process
 
 1. Create a feature branch from `develop`
