@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v4.0.3 - 2025-03-13
+
+### Other Changes
+
+- chore: robot emoji ([#49](https://github.com/jasonbahl/automation-tests/pull/49))
+
 ## v4.0.2 - 2025-03-13
 
 ### Other Changes
