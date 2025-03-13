@@ -242,8 +242,11 @@ jobs:
             echo "Changesets to delete:"
             find .changesets -maxdepth 1 -name "*.md" -type f -exec basename {} \;
             
-            # Delete all changesets using find to ensure all files are removed
-            find .changesets -maxdepth 1 -name "*.md" -type f -exec git rm {} \;
+            # Directly remove the files using rm -f
+            find .changesets -maxdepth 1 -name "*.md" -type f -exec rm -f {} \;
+            
+            # Stage the deletions
+            git add -A .changesets/
             
             # Commit the deleted changesets
             git commit -m "chore: delete changesets after release v${{ steps.version_bump.outputs.version }}"
