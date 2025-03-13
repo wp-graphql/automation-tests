@@ -3,7 +3,7 @@ Contributors: jasonbahl
 Tags: testing, automation
 Requires at least: 5.0
 Tested up to: 6.2
-Stable tag: 4.0.0
+Stable tag: 4.0.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -26,14 +26,6 @@ This is a test repository for experimenting with GitHub Workflows for WordPress 
 This plugin is a testing ground for GitHub Actions workflows before implementing them in production repositories.
 
 == Upgrade Notice ==
-
-= 4.0.0 =
-
-**⚠️ BREAKING CHANGES**: This release contains breaking changes that may require updates to your code.
-
-* fix!: ramen emoji (https://github.com/jasonbahl/automation-tests/pull/43)
-
-Please review these changes before upgrading.
 
 = 0.2.1 =
 
@@ -70,13 +62,19 @@ Please review these changes before upgrading.
 
 == Changelog ==
 
+= 4.0.1 =
+
+**Other Changes**
+
+* chore: Ghost Emoji (https://github.com/jasonbahl/automation-tests/pull/45)
+
 = 4.0.0 =
 
-**⚠️ BREAKING CHANGES**: This release contains breaking changes. Please review before upgrading.
-
-**Breaking Changes**
+**⚠️ BREAKING CHANGES**: This release contains breaking changes that may require updates to your code.
 
 * fix!: ramen emoji (https://github.com/jasonbahl/automation-tests/pull/43)
+
+Please review these changes before upgrading.
 
 = 3.3.0 =
 
