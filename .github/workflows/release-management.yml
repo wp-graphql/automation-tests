@@ -105,8 +105,9 @@ jobs:
       - name: Generate release notes
         id: release_notes
         run: |
-          # Create a temporary directory outside the repository
+          # Create a temporary directory outside the repository with proper permissions
           mkdir -p /tmp/release-notes
+          chmod 777 /tmp/release-notes
           
           # Check if this is a PR from develop to main
           if [[ "${{ github.event_name }}" == "pull_request_target" && "${{ github.event.pull_request.head.ref }}" == "develop" ]]; then
@@ -156,18 +157,13 @@ jobs:
           # Ensure the temporary directory and files are readable by subsequent steps
           chmod -R 755 /tmp/release-notes
           
-      # Add a cleanup step to ensure temporary files are removed
-      - name: Cleanup temporary files
-        if: always()
-        run: |
-          # Check if the temporary directory exists before attempting to remove it
-          if [ -d "/tmp/release-notes" ]; then
-            echo "Cleaning up temporary files..."
-            rm -rf /tmp/release-notes
-            echo "Temporary files removed."
-          else
-            echo "No temporary files to clean up."
-          fi
+          # List the contents of the directory to verify the file exists
+          echo "Verifying release notes file exists:"
+          ls -la /tmp/release-notes/
+          
+          # Copy the release notes to a more permanent location in the workspace
+          # This ensures it's available even if the temporary directory is cleaned up
+          cp /tmp/release-notes/release_notes.md $GITHUB_WORKSPACE/release_notes.md
           
       - name: Commit changes to develop
         if: github.event_name != 'pull_request_target'
@@ -223,7 +219,7 @@ jobs:
         with:
           tag_name: v${{ steps.version_bump.outputs.version }}
           release_name: Release v${{ steps.version_bump.outputs.version }}
-          body_path: /tmp/release-notes/release_notes.md
+          body_path: ${{ github.workspace }}/release_notes.md
           draft: false
           prerelease: false
           
@@ -272,15 +268,64 @@ jobs:
             # Authenticate with GitHub CLI
             echo "${{ secrets.REPO_PAT }}" | gh auth login --with-token
             
-            # Try to create the release with GitHub CLI
-            if gh release create "v${{ steps.version_bump.outputs.version }}" \
-              --title "Release v${{ steps.version_bump.outputs.version }}" \
-              --notes-file /tmp/release-notes/release_notes.md; then
-              echo "Successfully created release using GitHub CLI"
+            # Verify the release notes file exists
+            if [ -f "${{ github.workspace }}/release_notes.md" ]; then
+              echo "Using release notes from workspace:"
+              cat "${{ github.workspace }}/release_notes.md"
+              
+              # Try to create the release with GitHub CLI
+              if gh release create "v${{ steps.version_bump.outputs.version }}" \
+                --title "Release v${{ steps.version_bump.outputs.version }}" \
+                --notes-file "${{ github.workspace }}/release_notes.md"; then
+                echo "Successfully created release using GitHub CLI"
+              else
+                echo "::error::Failed to create release using GitHub CLI with notes file."
+                
+                # Try one more time with inline notes from the output
+                echo "Trying with inline notes..."
+                if gh release create "v${{ steps.version_bump.outputs.version }}" \
+                  --title "Release v${{ steps.version_bump.outputs.version }}" \
+                  --notes "${{ steps.release_notes.outputs.content }}"; then
+                  echo "Successfully created release using GitHub CLI with inline notes"
+                else
+                  echo "::error::Failed to create release using all methods. Please check logs for details."
+                  exit 1
+                fi
+              fi
             else
-              echo "::error::Failed to create release using both methods. Please check logs for details."
-              exit 1
+              echo "Release notes file not found in workspace. Using inline notes..."
+              # Try with inline notes
+              if gh release create "v${{ steps.version_bump.outputs.version }}" \
+                --title "Release v${{ steps.version_bump.outputs.version }}" \
+                --notes "${{ steps.release_notes.outputs.content }}"; then
+                echo "Successfully created release using GitHub CLI with inline notes"
+              else
+                echo "::error::Failed to create release using all methods. Please check logs for details."
+                exit 1
+              fi
             fi
+          fi
+          
+      # Add a cleanup step to ensure temporary files are removed
+      # This step runs AFTER the GitHub release is created
+      - name: Cleanup temporary files
+        if: always()
+        run: |
+          # Check if the temporary directory exists before attempting to remove it
+          if [ -d "/tmp/release-notes" ]; then
+            echo "Cleaning up temporary files..."
+            rm -rf /tmp/release-notes
+            echo "Temporary files removed."
+          else
+            echo "No temporary files to clean up."
+          fi
+          
+          # Also remove the release notes file from the workspace
+          # This prevents it from being versioned in the repository
+          if [ -f "$GITHUB_WORKSPACE/release_notes.md" ]; then
+            echo "Removing release notes file from workspace..."
+            rm -f "$GITHUB_WORKSPACE/release_notes.md"
+            echo "Workspace release notes file removed."
           fi
           
       - name: Delete processed changesets
@@ -305,6 +350,9 @@ jobs:
               
               # Stage the deletions
               git add -A .changesets/
+              
+              # Also make sure the release_notes.md file is not staged
+              git reset -- release_notes.md || true
               
               # Commit the deleted changesets
               git commit -m "chore: delete changesets after release v${{ steps.version_bump.outputs.version }}"
