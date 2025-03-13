@@ -11,13 +11,22 @@
 - Created `update-changelogs.js` for updating both changelog files at once
 - Created `update-upgrade-notice.js` for updating the upgrade notice section in readme.txt
 - Created `build.js` for building the plugin for release
+- Created utility modules in the `utils` directory:
+  - `env.js` for consistent environment variable handling across all scripts
 
 ## Workflows
 
 - **generate-changeset.yml**: Automatically generates a changeset file when a PR is merged to develop.
 - **release-management.yml**: Handles version bumping, changelog updates, and release creation when changes are merged to main.
   - Now includes improved sync between main and develop branches after releases
+    - Uses a non-fast-forward merge strategy with a descriptive commit message
+    - Includes [skip ci] in the commit message to prevent triggering additional workflows
+    - Ensures version bumps and changelog updates are reflected in both branches
   - Uses temporary directory for release notes to avoid Git tracking issues
+  - Implements robust error handling for external service interactions
+    - Detects and reports GitHub API rate limiting issues
+    - Provides fallback mechanisms when primary methods fail
+    - Ensures proper cleanup of temporary resources in all scenarios
 - Updated `deploy.yml` for handling deployments:
   - Deploy to WordPress.org SVN
   - Create GitHub release with assets
@@ -66,4 +75,7 @@
 - **Changeset Cleanup**: Changed from archiving changesets to deleting them after a release to prevent duplicate changelog entries.
 - **Release Notes Formatting**: Removed unnecessary "Found X changesets" line from release notes.
 - **Upgrade Notice Enhancement**: Automatically add breaking changes to the upgrade notice section in readme.txt.
+  - The `update-upgrade-notice.js` script checks for breaking changes in the release notes
+  - If breaking changes are found, they are added to the upgrade notice section in readme.txt
+  - This ensures users are properly warned about potential compatibility issues
 - **Documentation Updates**: Comprehensive documentation updates to reflect new features and options. 

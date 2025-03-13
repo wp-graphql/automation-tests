@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v4.0.1 - 2025-03-13
+
+### Other Changes
+
+- chore: Ghost Emoji ([#45](https://github.com/jasonbahl/automation-tests/pull/45))
+
 ## v4.0.0 - 2025-03-13
 
 > ⚠️ **BREAKING CHANGES**: This release contains breaking changes. Please review before upgrading.
