@@ -63,8 +63,27 @@ jobs:
         with:
           node-version: '16'
           
+      # Add caching for npm dependencies
+      - name: Cache npm dependencies
+        uses: actions/cache@v3
+        id: npm-cache
+        with:
+          path: |
+            **/node_modules
+            ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+          
       - name: Install dependencies
+        # Only run full install if cache miss
+        if: steps.npm-cache.outputs.cache-hit != 'true'
         run: npm ci
+        
+      # If cache hit, just check for any missing dependencies
+      - name: Check dependencies
+        if: steps.npm-cache.outputs.cache-hit == 'true'
+        run: npm ci --prefer-offline --no-audit
           
       - name: Check for changesets
         id: check_changesets

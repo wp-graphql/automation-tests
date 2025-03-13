@@ -30,11 +30,17 @@ This file contains suggestions for improvements to the workflows and scripts in 
    - Added a cleanup step that runs in all scenarios (success, failure, or cancellation)
    - Added checks to prevent errors when files don't exist
    - Improved error reporting for file operations
+   - Fixed issue with release notes not being found during GitHub release creation
+   - Ensured release notes file is not versioned in the repository
 
 ## Code Optimization Opportunities
 
 1. **Script Modularization**: Consider breaking down larger scripts into smaller, reusable modules to improve maintainability.
 
-2. **Caching in GitHub Actions**: Implement caching for npm dependencies in GitHub Actions workflows to speed up execution.
+2. ✅ **Caching in GitHub Actions**: Implemented caching for npm dependencies in GitHub Actions workflows to speed up execution.
+   - Added caching for node_modules and npm cache
+   - Used hash of package-lock.json for cache key to ensure proper invalidation
+   - Implemented conditional installation based on cache hit/miss
+   - Added fallback keys for partial cache restoration
 
 3. **Parallel Execution**: Where possible, consider running tasks in parallel in workflows to reduce overall execution time. 
