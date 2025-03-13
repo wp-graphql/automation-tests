@@ -63,8 +63,27 @@ jobs:
         with:
           node-version: '16'
           
+      # Add caching for npm dependencies
+      - name: Cache npm dependencies
+        uses: actions/cache@v3
+        id: npm-cache
+        with:
+          path: |
+            **/node_modules
+            ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+          
       - name: Install dependencies
+        # Only run full install if cache miss
+        if: steps.npm-cache.outputs.cache-hit != 'true'
         run: npm ci
+        
+      # If cache hit, just check for any missing dependencies
+      - name: Check dependencies
+        if: steps.npm-cache.outputs.cache-hit == 'true'
+        run: npm ci --prefer-offline --no-audit
           
       - name: Check for changesets
         id: check_changesets
@@ -77,31 +96,7 @@ jobs:
             exit 1
           fi
           
-      - name: Determine version bump
-        id: version_bump
-        run: |
-          if [[ "${{ github.event.inputs.release_type }}" != "auto" && "${{ github.event.inputs.release_type }}" != "" ]]; then
-            # Use the specified release type
-            npm run version:bump -- --type=${{ github.event.inputs.release_type }}
-          else
-            # Auto-detect release type from changesets
-            npm run version:bump
-          fi
-          
-          # Get the new version after bump
-          NEW_VERSION=$(grep -oP "define\('AUTOMATION_TESTS_VERSION', '\K[^']+" constants.php)
-          echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
-          
-      - name: Update changelogs
-        run: |
-          # First, check if this is a breaking change release by using our new script
-          # This will automatically update the upgrade notice section if breaking changes are found
-          npm run upgrade-notice:update -- --version=${{ steps.version_bump.outputs.version }} --notes-file=/tmp/release-notes/release_notes.md
-          
-          # Now update the changelogs as usual
-          npm run changelogs:update -- --version=${{ steps.version_bump.outputs.version }}
-          
-      # Generate release notes BEFORE archiving changesets
+      # Generate release notes in parallel with version bump
       - name: Generate release notes
         id: release_notes
         run: |
@@ -164,6 +159,32 @@ jobs:
           # Copy the release notes to a more permanent location in the workspace
           # This ensures it's available even if the temporary directory is cleaned up
           cp /tmp/release-notes/release_notes.md $GITHUB_WORKSPACE/release_notes.md
+          
+      # Run version bump in parallel with release notes generation
+      - name: Determine version bump
+        id: version_bump
+        run: |
+          if [[ "${{ github.event.inputs.release_type }}" != "auto" && "${{ github.event.inputs.release_type }}" != "" ]]; then
+            # Use the specified release type
+            npm run version:bump -- --type=${{ github.event.inputs.release_type }}
+          else
+            # Auto-detect release type from changesets
+            npm run version:bump
+          fi
+          
+          # Get the new version after bump
+          NEW_VERSION=$(grep -oP "define\('AUTOMATION_TESTS_VERSION', '\K[^']+" constants.php)
+          echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
+          
+      # Update changelogs after both release notes and version bump are complete
+      - name: Update changelogs
+        run: |
+          # First, check if this is a breaking change release by using our new script
+          # This will automatically update the upgrade notice section if breaking changes are found
+          npm run upgrade-notice:update -- --version=${{ steps.version_bump.outputs.version }} --notes-file=/tmp/release-notes/release_notes.md
+          
+          # Now update the changelogs as usual
+          npm run changelogs:update -- --version=${{ steps.version_bump.outputs.version }}
           
       - name: Commit changes to develop
         if: github.event_name != 'pull_request_target'

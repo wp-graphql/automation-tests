@@ -23,11 +23,10 @@
  *   4. Explicit --breaking=true flag
  */
 
-const fs = require('fs-extra');
-const path = require('path');
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
 const { getEnvVar } = require('./utils/env');
+const { createChangeset } = require('./utils/changesets');
 
 // Get GitHub token from environment variables
 // This will work with both GitHub Actions (GITHUB_TOKEN) and local .env file
@@ -110,34 +109,22 @@ function isBreakingChange(title, body) {
  * Generate a changeset file
  */
 async function generateChangeset() {
-  // Create .changesets directory if it doesn't exist
-  const changesetDir = path.join(process.cwd(), '.changesets');
-  await fs.ensureDir(changesetDir);
-
   // Extract PR information
   const { pr, title, author, body } = argv;
   const changeType = extractChangeType(title);
   const breaking = isBreakingChange(title, body);
 
-  // Generate unique filename with timestamp and PR number
-  const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '');
-  const filename = path.join(changesetDir, `${timestamp}-pr-${pr}.md`);
+  // Use the createChangeset utility to create the changeset file
+  const changesetPath = await createChangeset({
+    title,
+    pr,
+    author,
+    type: changeType,
+    breaking,
+    description: body
+  });
 
-  // Create changeset content
-  const content = `---
-title: "${title}"
-pr: ${pr}
-author: "${author}"
-type: "${changeType}"
-breaking: ${breaking}
-description: |
-${body.split('\n').map(line => `  ${line}`).join('\n')}
----
-`;
-
-  // Write changeset file
-  await fs.writeFile(filename, content);
-  console.log(`Changeset created: ${filename}`);
+  console.log(`Changeset created: ${changesetPath}`);
 }
 
 // Run the script

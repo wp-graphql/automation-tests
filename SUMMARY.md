@@ -13,6 +13,10 @@
 - Created `build.js` for building the plugin for release
 - Created utility modules in the `utils` directory:
   - `env.js` for consistent environment variable handling across all scripts
+  - `changesets.js` for consistent changeset operations across all scripts
+    - Provides functions for reading, writing, and analyzing changesets
+    - Implements consistent error handling for changeset operations
+    - Enables code reuse across multiple scripts
 
 ## Workflows
 
@@ -58,6 +62,7 @@
 - **Consistency**: Ensures standardized processes for versioning and releases
 - **Efficiency**: Combined operations reduce duplication and potential for inconsistencies
 - **Cleanliness**: Use of temporary files keeps the repository clean
+- **Modularity**: Utility modules provide reusable functions across multiple scripts
 
 ## Next Steps
 - Test scripts with various scenarios to ensure robustness
@@ -78,4 +83,9 @@
   - The `update-upgrade-notice.js` script checks for breaking changes in the release notes
   - If breaking changes are found, they are added to the upgrade notice section in readme.txt
   - This ensures users are properly warned about potential compatibility issues
+- **Script Modularization**: Refactored scripts to use the new utility modules:
+  - Updated `generate-changeset.js` to use the `createChangeset` function
+  - Updated `analyze-changesets.js` to use `readAllChangesets`, `determineBumpType`, and `categorizeChangesets` functions
+  - Updated `generate-release-notes.js` to use changeset utility functions
+  - This reduces code duplication and ensures consistent behavior across scripts
 - **Documentation Updates**: Comprehensive documentation updates to reflect new features and options. 

@@ -498,6 +498,45 @@ This utility automatically:
 - Provides type conversion and default values
 - Only loads environment variables once per process
 
+### Changeset Utilities
+
+The repository also includes a utility module for working with changesets:
+
+```javascript
+// Import the utility
+const { 
+  readAllChangesets, 
+  determineBumpType, 
+  categorizeChangesets,
+  createChangeset
+} = require('./utils/changesets');
+
+// Read all changesets
+const changesets = await readAllChangesets();
+
+// Determine the appropriate version bump type
+const bumpType = determineBumpType(changesets);
+
+// Categorize changesets by type
+const categories = categorizeChangesets(changesets);
+
+// Create a new changeset
+const changesetPath = await createChangeset({
+  title: 'feat: Add new feature',
+  pr: 123,
+  author: 'username',
+  type: 'feat',
+  breaking: false,
+  description: 'Description of the change'
+});
+```
+
+This utility provides:
+- Functions for reading and writing changesets
+- Helpers for determining version bump types
+- Methods for categorizing changes
+- Consistent error handling across changeset operations
+
 ## Directory Structure
 
 ```
@@ -522,7 +561,8 @@ This utility automatically:
 │   ├── update-upgrade-notice.js    # Update upgrade notice section
 │   ├── build.js                    # Build plugin zip
 │   └── utils/                      # Utility modules
-│       └── env.js                  # Environment variable utilities
+│       ├── env.js                  # Environment variable utilities
+│       └── changesets.js           # Changeset utilities
 ├── automation-tests.php            # Main plugin file
 ├── constants.php                   # Plugin constants
 ├── CHANGELOG.md                    # Changelog
