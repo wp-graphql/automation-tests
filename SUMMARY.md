@@ -11,6 +11,8 @@
 - Created `update-changelogs.js` for updating both changelog files at once
 - Created `update-upgrade-notice.js` for updating the upgrade notice section in readme.txt
 - Created `build.js` for building the plugin for release
+- Created utility modules in the `utils` directory:
+  - `env.js` for consistent environment variable handling across all scripts
 
 ## Workflows
 
@@ -21,6 +23,10 @@
     - Includes [skip ci] in the commit message to prevent triggering additional workflows
     - Ensures version bumps and changelog updates are reflected in both branches
   - Uses temporary directory for release notes to avoid Git tracking issues
+  - Implements robust error handling for external service interactions
+    - Detects and reports GitHub API rate limiting issues
+    - Provides fallback mechanisms when primary methods fail
+    - Ensures proper cleanup of temporary resources in all scenarios
 - Updated `deploy.yml` for handling deployments:
   - Deploy to WordPress.org SVN
   - Create GitHub release with assets

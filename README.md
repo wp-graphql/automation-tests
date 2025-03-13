@@ -474,6 +474,30 @@ The scripts support the following environment variables:
 
 You can set these variables in your environment or in a `.env` file to avoid passing them as command-line arguments each time.
 
+### Environment Variable Utilities
+
+The repository includes a utility module for handling environment variables consistently across all scripts:
+
+```javascript
+// Import the utility
+const { getEnvVar, getBoolEnvVar, getNumEnvVar } = require('./utils/env');
+
+// Get a string environment variable with a default value
+const repoUrl = getEnvVar('REPO_URL', 'https://github.com/default/repo');
+
+// Get a boolean environment variable
+const isDebug = getBoolEnvVar('DEBUG', false);
+
+// Get a numeric environment variable
+const timeout = getNumEnvVar('TIMEOUT', 30000);
+```
+
+This utility automatically:
+- Loads environment variables from `.env.local`, `.env.development`, or `.env` files (in that order of priority)
+- Works in both local development and CI/CD environments
+- Provides type conversion and default values
+- Only loads environment variables once per process
+
 ## Directory Structure
 
 ```
@@ -494,7 +518,11 @@ You can set these variables in your environment or in a `.env` file to avoid pas
 │   ├── bump-version.js             # Bump version numbers
 │   ├── update-changelog.js         # Update CHANGELOG.md
 │   ├── update-readme.js            # Update readme.txt
-│   └── build.js                    # Build plugin zip
+│   ├── update-changelogs.js        # Update both changelog files at once
+│   ├── update-upgrade-notice.js    # Update upgrade notice section
+│   ├── build.js                    # Build plugin zip
+│   └── utils/                      # Utility modules
+│       └── env.js                  # Environment variable utilities
 ├── automation-tests.php            # Main plugin file
 ├── constants.php                   # Plugin constants
 ├── CHANGELOG.md                    # Changelog
