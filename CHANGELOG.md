@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## v4.0.0 - 2025-03-13
+
+> ⚠️ **BREAKING CHANGES**: This release contains breaking changes. Please review before upgrading.
+
+### Breaking Changes
+
+- fix!: ramen emoji ([#43](https://github.com/jasonbahl/automation-tests/pull/43))
+
 ## v3.3.0 - 2025-03-12
 
 ### New Features
