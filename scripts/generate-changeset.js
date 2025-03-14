@@ -110,7 +110,7 @@ function isBreakingChange(title, body) {
   }
   
   // Check for conventional commit breaking change indicator (!)
-  if (title.includes('!:')) {
+  if (title.includes('!')) {
     return true;
   }
   
@@ -156,12 +156,12 @@ async function generateChangeset() {
   const changeType = extractChangeType(title);
   const breaking = isBreakingChange(title, body);
 
-  // Use the createChangeset utility to create the changeset file
+  // Store the complete title in the changeset
   const changesetPath = await createChangeset({
-    title,
+    title: title.trim(),
     pr,
     author,
-    type: changeType,
+    type: title.split(':')[0].trim(),
     breaking,
     branch,
     description: body
