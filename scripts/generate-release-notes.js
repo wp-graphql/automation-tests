@@ -150,6 +150,15 @@ async function readChangesets(options = {}) {
   return changesets.filter(changeset => changeset.branch === branch);
 }
 
+// Update the function that formats the changeset entries
+function formatChangesetEntry(changeset) {
+  // Remove any single quotes that might be wrapping the title
+  const title = changeset.title.replace(/^['"]|['"]$/g, '');
+  
+  // Ensure we have the full title
+  return `* **${title}** (#${changeset.pr}) - @${changeset.author}`;
+}
+
 // Generate release notes in markdown format
 async function generateMarkdownReleaseNotes(changesets, repoUrl, token) {
   // Categorize changesets
