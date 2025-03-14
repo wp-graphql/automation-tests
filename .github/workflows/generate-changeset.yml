@@ -179,14 +179,12 @@ jobs:
           # Create a temporary directory for release notes
           mkdir -p /tmp/release-notes
           
-          # Generate release notes from all changesets to a temporary file
-          # For develop branch, include all changesets (including those from milestone branches)
+          # For develop branch, don't filter by branch to include all changesets
           if [[ "${{ steps.target_branch.outputs.name }}" == "develop" ]]; then
             echo "Generating release notes for develop branch (including milestone branch changesets)"
             npm run release:notes > /tmp/release-notes/temp_notes_raw.md
           else
-            # For other branches, filter by branch
-            echo "Generating release notes for ${{ steps.target_branch.outputs.name }} branch"
+            # For other branches, filter by branch as before
             npm run release:notes -- --branch="${{ steps.target_branch.outputs.name }}" > /tmp/release-notes/temp_notes_raw.md
           fi
           
@@ -317,7 +315,7 @@ jobs:
         if: steps.target_branch.outputs.is_milestone == 'true' && steps.check_milestone_pr.outputs.exists == 'false'
         run: |
           # Create a new PR from milestone branch to develop
-          PR_TITLE="feat: ${{ steps.target_branch.outputs.milestone_name }} 🚀"
+          PR_TITLE="milestone: ${{ steps.target_branch.outputs.milestone_name }} 🚀"
           
           # Create the PR body with proper formatting
           PR_BODY="## Milestone: ${{ steps.target_branch.outputs.milestone_name }}"
