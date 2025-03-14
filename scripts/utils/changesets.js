@@ -120,45 +120,29 @@ async function readAllChangesets(options = {}) {
 }
 
 /**
- * Parse changeset content from a file
- * 
+ * Read and parse a changeset file
  * @param {string} content The content of the changeset file
- * @returns {Object} Parsed changeset object
+ * @returns {Object} Parsed changeset data
  */
 function parseChangesetContent(content) {
-  // Use your existing parsing logic here
-  // This should extract title, PR number, author, type, breaking flag, branch, etc.
-  // from the changeset content
-  
-  // Example implementation (adjust based on your actual changeset format):
   const lines = content.split('\n');
-  const changeset = {
-    title: '',
-    pr: null,
-    author: '',
-    type: 'other',
-    breaking: false,
-    branch: undefined,
-    description: ''
-  };
+  const changeset = {};
   
-  // Parse metadata lines (key: value format)
-  const metadataLines = lines.filter(line => line.includes(':'));
-  for (const line of metadataLines) {
-    const [key, value] = line.split(':', 2).map(part => part.trim());
-    if (key === 'title') {
-      changeset.title = value.replace(/^['"]|['"]$/g, '');
-    } else if (key === 'pr') changeset.pr = parseInt(value, 10) || null;
-    else if (key === 'author') changeset.author = value;
-    else if (key === 'type') changeset.type = value;
-    else if (key === 'breaking') changeset.breaking = value === 'true';
-    else if (key === 'branch') changeset.branch = value;
-  }
-  
-  // Extract description (everything after metadata)
-  const descriptionStartIndex = metadataLines.length;
-  if (descriptionStartIndex < lines.length) {
-    changeset.description = lines.slice(descriptionStartIndex).join('\n').trim();
+  let inFrontmatter = false;
+  for (const line of lines) {
+    if (line.trim() === '---') {
+      inFrontmatter = !inFrontmatter;
+      continue;
+    }
+    
+    if (inFrontmatter) {
+      const [key, ...valueParts] = line.split(':');
+      if (key && valueParts.length) {
+        // Join value parts back together and clean up quotes and whitespace
+        const value = valueParts.join(':').trim().replace(/^['"]|['"]$/g, '');
+        changeset[key.trim()] = value;
+      }
+    }
   }
   
   return changeset;
@@ -202,11 +186,12 @@ function categorizeChangesets(changesets = []) {
   };
   
   changesets.forEach(changeset => {
-    if (changeset.breaking) {
+    // Check for ! in the title for breaking changes
+    if (changeset.title.includes('!')) {
       categories.breaking.push(changeset);
-    } else if (changeset.type === 'feat') {
+    } else if (changeset.title.startsWith('feat:')) {
       categories.features.push(changeset);
-    } else if (changeset.type === 'fix') {
+    } else if (changeset.title.startsWith('fix:')) {
       categories.fixes.push(changeset);
     } else {
       categories.other.push(changeset);
@@ -229,7 +214,21 @@ function categorizeChangesets(changesets = []) {
  * @param {string} data.description PR description
  * @returns {Promise<string>} Path to the created changeset file
  */
-async function createChangeset({ title, pr, author, type, breaking, branch = 'develop', description = '' }) {
+async function createChangeset(data) {
+  const { title, pr, author, type, breaking, branch, description } = data;
+  
+  // Use the full title in the changeset content
+  const content = `---
+title: ${title}
+pr: ${pr}
+author: ${author}
+type: ${type}
+breaking: ${breaking}
+branch: ${branch}
+---
+
+${description}`;
+  
   // Ensure the .changesets directory exists
   const changesetDir = path.join(process.cwd(), '.changesets');
   await fs.ensureDir(changesetDir);
@@ -238,16 +237,6 @@ async function createChangeset({ title, pr, author, type, breaking, branch = 'de
   const timestamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0];
   const filename = `${timestamp}-pr-${pr}.md`;
   const filepath = path.join(changesetDir, filename);
-  
-  // Create the changeset content with frontmatter
-  const content = matter.stringify(description, {
-    title,
-    pr,
-    author,
-    type,
-    breaking,
-    branch
-  });
   
   // Write the changeset file
   await fs.writeFile(filepath, content);
@@ -270,6 +259,32 @@ async function deleteAllChangesets() {
   await Promise.all(files.map(file => fs.remove(file)));
   
   return files.length;
+}
+
+/**
+ * Parse a PR title into its components
+ * @param {string} title The full PR title
+ * @returns {{prefix: string, description: string}} The parsed title components
+ */
+function parsePrTitle(title) {
+  const [prefix, ...rest] = title.split(':');
+  return {
+    prefix: prefix.trim(),
+    description: rest.join(':').trim() // Join back in case there were other colons
+  };
+}
+
+/**
+ * Format a changeset entry for the release notes
+ * @param {Object} changeset The changeset object
+ * @returns {string} Formatted entry
+ */
+function formatChangesetEntry(changeset) {
+  const { prefix, description } = parsePrTitle(changeset.title);
+  const breaking = changeset.breaking ? '!' : '';
+  
+  // Format as "**prefix**: description" or "**prefix!**: description" for breaking changes
+  return `- **${prefix}${breaking}**: ${description} ([#${changeset.pr}](${repoUrl}/pull/${changeset.pr})) - @${changeset.author}`;
 }
 
 module.exports = {

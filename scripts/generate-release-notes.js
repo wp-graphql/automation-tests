@@ -150,12 +150,13 @@ async function readChangesets(options = {}) {
   return changesets.filter(changeset => changeset.branch === branch);
 }
 
-// Ensure consistent formatting for changeset entries
-function formatChangesetEntry(changeset) {
-  // Clean up the title (remove quotes, ensure proper format)
-  const title = changeset.title.replace(/^['"]|['"]$/g, '');
-  
-  return `* **${title}** (#${changeset.pr}) - @${changeset.author}`;
+/**
+ * Format a changeset entry for the release notes
+ * @param {Object} changeset The changeset object
+ * @returns {string} Formatted entry
+ */
+function formatChangesetEntry(changeset, repoUrl) {
+  return `- **${changeset.title}** ([#${changeset.pr}](${repoUrl}/pull/${changeset.pr})) - @${changeset.author}`;
 }
 
 // Generate release notes in markdown format
@@ -163,89 +164,46 @@ async function generateMarkdownReleaseNotes(changesets, repoUrl, token) {
   // Categorize changesets
   const categories = categorizeChangesets(changesets);
   
-  // Determine the appropriate version bump type
-  const bumpType = determineBumpType(changesets);
-  
   // Start building the release notes
   let notes = ``;
   
   // Add breaking changes section if there are any
   if (categories.breaking.length > 0) {
     notes += `### Breaking Changes ⚠️\n\n`;
-    
     for (const changeset of categories.breaking) {
       const prLink = repoUrl ? `([#${changeset.pr}](${repoUrl}/pull/${changeset.pr}))` : `(#${changeset.pr})`;
-      const prefixRegex = /^(feat!?|fix!?|docs!?|style!?|refactor!?|perf!?|test!?|build!?|ci!?|chore!?|revert!?)(\([^)]+\))?:/;
-      const match = changeset.title.match(prefixRegex);
-      if (match) {
-        const prefix = changeset.title.substring(0, match[0].length);
-        const restOfTitle = changeset.title.substring(match[0].length).trim();
-        notes += `- **${prefix}** ${restOfTitle} ${prLink} - @${changeset.author}\n`;
-      } else {
-        notes += `- **${changeset.title}** ${prLink} - @${changeset.author}\n`;
-      }
+      notes += `- ${changeset.title} ${prLink} - @${changeset.author}\n`;
     }
-    
     notes += `\n`;
   }
   
   // Add features section if there are any
   if (categories.features.length > 0) {
     notes += `### Features ✨\n\n`;
-    
     for (const changeset of categories.features) {
       const prLink = repoUrl ? `([#${changeset.pr}](${repoUrl}/pull/${changeset.pr}))` : `(#${changeset.pr})`;
-      const prefixRegex = /^(feat!?|fix!?|docs!?|style!?|refactor!?|perf!?|test!?|build!?|ci!?|chore!?|revert!?)(\([^)]+\))?:/;
-      const match = changeset.title.match(prefixRegex);
-      if (match) {
-        const prefix = changeset.title.substring(0, match[0].length);
-        const restOfTitle = changeset.title.substring(match[0].length).trim();
-        notes += `- **${prefix}** ${restOfTitle} ${prLink} - @${changeset.author}\n`;
-      } else {
-        notes += `- **${changeset.title.replace(/^feat:\s*/i, '')}** ${prLink} - @${changeset.author}\n`;
-      }
+      notes += `- ${changeset.title} ${prLink} - @${changeset.author}\n`;
     }
-    
     notes += `\n`;
   }
   
   // Add fixes section if there are any
   if (categories.fixes.length > 0) {
     notes += `### Fixes 🐛\n\n`;
-    
     for (const changeset of categories.fixes) {
       const prLink = repoUrl ? `([#${changeset.pr}](${repoUrl}/pull/${changeset.pr}))` : `(#${changeset.pr})`;
-      const prefixRegex = /^(feat!?|fix!?|docs!?|style!?|refactor!?|perf!?|test!?|build!?|ci!?|chore!?|revert!?)(\([^)]+\))?:/;
-      const match = changeset.title.match(prefixRegex);
-      if (match) {
-        const prefix = changeset.title.substring(0, match[0].length);
-        const restOfTitle = changeset.title.substring(match[0].length).trim();
-        notes += `- **${prefix}** ${restOfTitle} ${prLink} - @${changeset.author}\n`;
-      } else {
-        notes += `- **${changeset.title.replace(/^fix:\s*/i, '')}** ${prLink} - @${changeset.author}\n`;
-      }
+      notes += `- ${changeset.title} ${prLink} - @${changeset.author}\n`;
     }
-    
     notes += `\n`;
   }
   
   // Add other changes section if there are any
   if (categories.other.length > 0) {
     notes += `### Other Changes 🔄\n\n`;
-    
     for (const changeset of categories.other) {
       const prLink = repoUrl ? `([#${changeset.pr}](${repoUrl}/pull/${changeset.pr}))` : `(#${changeset.pr})`;
-      const prefixRegex = /^(feat!?|fix!?|docs!?|style!?|refactor!?|perf!?|test!?|build!?|ci!?|chore!?|revert!?)(\([^)]+\))?:/;
-      const match = changeset.title.match(prefixRegex);
-      if (match) {
-        const prefix = changeset.title.substring(0, match[0].length);
-        const restOfTitle = changeset.title.substring(match[0].length).trim();
-        notes += `- **${prefix}** ${restOfTitle} ${prLink} - @${changeset.author}\n`;
-      } else {
-        notes += `- **${changeset.title.replace(/^[^:]+:\s*/i, '')}** ${prLink} - @${changeset.author}\n`;
-      }
+      notes += `- ${changeset.title} ${prLink} - @${changeset.author}\n`;
     }
-    
     notes += `\n`;
   }
   
@@ -273,7 +231,6 @@ async function generateMarkdownReleaseNotes(changesets, repoUrl, token) {
   if (contributors.size > 0) {
     notes += `## Contributors\n\n`;
     notes += `Thanks to all the contributors who made this release possible!\n\n`;
-    
     for (const contributor of contributors) {
       if (firstTimeContributors.has(contributor)) {
         notes += `- @${contributor} 🎉 (First-time contributor)\n`;
@@ -359,28 +316,22 @@ async function generateJsonReleaseNotes(changesets, repoUrl, token) {
 async function generateReleaseNotes() {
   // Get repository URL
   const repoUrl = await getRepoUrl();
-  
-  // Get GitHub token
   const token = getGitHubToken();
   
-  // Read all changesets, filtering by branch if specified
+  // Read changesets with branch filter if specified
   const changesets = await readChangesets({ branch: argv.branch });
   
-  // Log the number of changesets found
-  console.log(`Found ${changesets.length} changesets${argv.branch ? ` for branch ${argv.branch}` : ''}.`);
-  
-  // Generate release notes in the requested format
   if (argv.format === 'json') {
-    const jsonNotes = await generateJsonReleaseNotes(changesets, repoUrl, token);
-    console.log(jsonNotes);
-  } else {
-    const markdownNotes = await generateMarkdownReleaseNotes(changesets, repoUrl, token);
-    console.log(markdownNotes);
+    return generateJsonReleaseNotes(changesets, repoUrl, token);
   }
+  
+  return generateMarkdownReleaseNotes(changesets, repoUrl, token);
 }
 
-// Run the script
-generateReleaseNotes().catch(err => {
-  console.error('Error generating release notes:', err);
-  process.exit(1);
-}); 
+// Main execution
+generateReleaseNotes()
+  .then(notes => console.log(notes))
+  .catch(error => {
+    console.error('Error generating release notes:', error);
+    process.exit(1);
+  }); 
