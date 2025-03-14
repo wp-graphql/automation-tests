@@ -103,13 +103,15 @@ jobs:
             "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}")
           
           PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
-          PR_BODY=$(echo "$PR_DATA" | jq -r '.body')
           PR_AUTHOR=$(echo "$PR_DATA" | jq -r '.user.login')
+          
+          # Use base64 encoding to avoid issues with special characters in PR body
+          PR_BODY_BASE64=$(echo "$PR_DATA" | jq -r '.body' | base64 -w 0)
           
           echo "pr_number=${PR_NUMBER}" >> $GITHUB_OUTPUT
           echo "pr_title=${PR_TITLE}" >> $GITHUB_OUTPUT
           echo "pr_author=${PR_AUTHOR}" >> $GITHUB_OUTPUT
-          echo "pr_body=${PR_BODY}" >> $GITHUB_OUTPUT
+          echo "pr_body_base64=${PR_BODY_BASE64}" >> $GITHUB_OUTPUT
           
       - name: Determine target branch
         id: target_branch
@@ -134,13 +136,28 @@ jobs:
           
       - name: Generate changeset for current PR
         run: |
+          # Decode the PR body from base64
+          PR_BODY=$(echo "${{ steps.pr_info.outputs.pr_body_base64 }}" | base64 --decode)
+          
+          # Determine source branch (head) and target branch (base)
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            # For workflow_dispatch, we don't have direct access to source branch
+            SOURCE_BRANCH=""
+            TARGET_BRANCH="${{ steps.target_branch.outputs.name }}"
+          else
+            SOURCE_BRANCH="${{ github.event.pull_request.head.ref }}"
+            TARGET_BRANCH="${{ github.event.pull_request.base.ref }}"
+          fi
+          
           # Generate a changeset for the current PR
           node scripts/generate-changeset.js \
             --pr="${{ steps.pr_info.outputs.pr_number }}" \
             --title="${{ steps.pr_info.outputs.pr_title }}" \
             --author="${{ steps.pr_info.outputs.pr_author }}" \
-            --body="${{ steps.pr_info.outputs.pr_body }}" \
-            --branch="${{ steps.target_branch.outputs.name }}"
+            --body="${PR_BODY}" \
+            --branch="${{ steps.target_branch.outputs.name }}" \
+            --source="${SOURCE_BRANCH}" \
+            --target="${TARGET_BRANCH}"
           
           # Commit and push the changeset
           git config --global user.name "GitHub Actions"

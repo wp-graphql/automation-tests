@@ -272,8 +272,11 @@ sequenceDiagram
     GH->>MS: Update progress
     GH->>PR: Update PR to develop
     MB->>D: Merge when complete
+    Note over D,GH: No new changeset generated for milestone PR
     D->>GH: Include milestone changes in next release
 ```
+
+This diagram shows how feature branches are merged into a milestone branch, which generates changesets. When the milestone branch is merged to develop, no new changeset is generated since all changes already have their own changesets. The existing changesets are included in the develop branch and will be part of the next release.
 
 ## Complete Workflow with Milestone Branches
 

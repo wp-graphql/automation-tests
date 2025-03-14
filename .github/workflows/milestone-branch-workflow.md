@@ -72,10 +72,11 @@ The workflow integrates with GitHub Milestones:
 When a milestone branch is eventually merged to develop:
 
 1. All changesets from the milestone branch are included in the develop branch.
-2. The existing develop workflow kicks in, updating the PR from develop to main with all changesets.
-3. The changesets maintain their original metadata, including the branch they were created in.
+2. The workflow automatically skips generating a new changeset for the milestone PR itself, since all changes already have their own changesets.
+3. The existing develop workflow kicks in, updating the PR from develop to main with all changesets.
+4. The changesets maintain their original metadata, including the branch they were created in.
 
-This ensures that the release notes for the next release include all changes, whether they came from direct PRs to develop or from milestone branches.
+This ensures that the release notes for the next release include all changes, whether they came from direct PRs to develop or from milestone branches, without duplication.
 
 ## Example Workflow
 
