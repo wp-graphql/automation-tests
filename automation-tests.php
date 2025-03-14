@@ -21,6 +21,7 @@ add_action( 'admin_notices', function() {
 // - Email
 // - Phone
 // - DateTime
+// - Date
 
 // BREAKING CHANGE
 // We're simulating a breaking change with this comment.
