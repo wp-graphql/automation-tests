@@ -75,7 +75,7 @@ async function readChangeset(filePath) {
  * @returns {Promise<Array>} Array of changeset objects
  */
 async function readAllChangesets(options = {}) {
-  const { branch } = options;
+  const { branch } = options || {};
   
   // Get all changeset files
   const changesetDir = path.join(process.cwd(), '.changesets');
@@ -89,7 +89,7 @@ async function readAllChangesets(options = {}) {
       const content = await fs.readFile(filePath, 'utf8');
       
       // Parse the changeset content
-      const changeset = parseChangeset(content);
+      const changeset = parseChangesetContent(content);
       
       // Add the filename to the changeset
       changeset.filename = file;
@@ -103,20 +103,64 @@ async function readAllChangesets(options = {}) {
     // Special case for develop branch - include milestone branch changesets
     if (branch === 'develop') {
       return changesets.filter(changeset => 
+        !changeset.branch || // Include changesets without branch info
         changeset.branch === branch || 
-        changeset.branch === undefined || // Include changesets without branch info
         changeset.branch.startsWith('milestone/')
       );
     }
     
     // Otherwise, filter by the specified branch
     return changesets.filter(changeset => 
-      changeset.branch === branch || 
-      changeset.branch === undefined // Include changesets without branch info
+      !changeset.branch || // Include changesets without branch info
+      changeset.branch === branch
     );
   }
   
   return changesets;
+}
+
+/**
+ * Parse changeset content from a file
+ * 
+ * @param {string} content The content of the changeset file
+ * @returns {Object} Parsed changeset object
+ */
+function parseChangesetContent(content) {
+  // Use your existing parsing logic here
+  // This should extract title, PR number, author, type, breaking flag, branch, etc.
+  // from the changeset content
+  
+  // Example implementation (adjust based on your actual changeset format):
+  const lines = content.split('\n');
+  const changeset = {
+    title: '',
+    pr: null,
+    author: '',
+    type: 'other',
+    breaking: false,
+    branch: undefined,
+    description: ''
+  };
+  
+  // Parse metadata lines (key: value format)
+  const metadataLines = lines.filter(line => line.includes(':'));
+  for (const line of metadataLines) {
+    const [key, value] = line.split(':', 2).map(part => part.trim());
+    if (key === 'title') changeset.title = value;
+    else if (key === 'pr') changeset.pr = parseInt(value, 10) || null;
+    else if (key === 'author') changeset.author = value;
+    else if (key === 'type') changeset.type = value;
+    else if (key === 'breaking') changeset.breaking = value === 'true';
+    else if (key === 'branch') changeset.branch = value;
+  }
+  
+  // Extract description (everything after metadata)
+  const descriptionStartIndex = metadataLines.length;
+  if (descriptionStartIndex < lines.length) {
+    changeset.description = lines.slice(descriptionStartIndex).join('\n').trim();
+  }
+  
+  return changeset;
 }
 
 /**
