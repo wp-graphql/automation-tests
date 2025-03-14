@@ -19,3 +19,4 @@ add_action( 'admin_notices', function() {
 
 // SCALARS:
 // - Email
+// - Phone
