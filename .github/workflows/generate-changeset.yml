@@ -134,15 +134,37 @@ jobs:
           # Create a temporary directory for release notes
           mkdir -p /tmp/release-notes
           
+          # Generate release notes directly to see the raw output
+          echo "Raw output from release:notes command:"
+          npm run release:notes
+          
           # Generate release notes from all changesets to a temporary file
-          npm run release:notes 2>/dev/null | grep -v "^>" > /tmp/release-notes/temp_notes_raw.md
+          # Don't filter with grep initially to see what we're getting
+          npm run release:notes > /tmp/release-notes/temp_notes_raw.md
           
-          # Remove the "Found X changesets" line
-          sed -n '/^Found/!p' /tmp/release-notes/temp_notes_raw.md > /tmp/release-notes/temp_notes.md
+          # Show the raw content
+          echo "Raw content of temp_notes_raw.md:"
+          cat /tmp/release-notes/temp_notes_raw.md
           
-          # For debugging
-          echo "Generated release notes:"
+          # Now apply filtering if needed
+          cat /tmp/release-notes/temp_notes_raw.md | grep -v "^>" > /tmp/release-notes/temp_notes_filtered.md
+          
+          # Show filtered content
+          echo "Filtered content:"
+          cat /tmp/release-notes/temp_notes_filtered.md
+          
+          # Apply sed filtering
+          sed -n '/^Found/!p' /tmp/release-notes/temp_notes_filtered.md > /tmp/release-notes/temp_notes.md
+          
+          # Show final content
+          echo "Final release notes content:"
           cat /tmp/release-notes/temp_notes.md
+          
+          # Make sure the file isn't empty
+          if [ ! -s /tmp/release-notes/temp_notes.md ]; then
+            echo "Warning: Release notes file is empty. Using fallback content."
+            echo "No changes documented yet. This will be updated when changesets are processed." > /tmp/release-notes/temp_notes.md
+          fi
           
       - name: Check for existing release PR
         id: check_pr
@@ -174,10 +196,20 @@ jobs:
           
           PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
           
+          # Check if release notes file exists and has content
+          if [ -s /tmp/release-notes/temp_notes.md ]; then
+            RELEASE_NOTES=$(cat /tmp/release-notes/temp_notes.md)
+            echo "Using generated release notes:"
+            echo "$RELEASE_NOTES"
+          else
+            RELEASE_NOTES="No changes documented yet. This will be updated when changesets are processed."
+            echo "Using fallback release notes"
+          fi
+          
           # Create the PR body with proper formatting
           PR_BODY="## Upcoming Changes"
           PR_BODY="${PR_BODY}"$'\n\n'
-          PR_BODY="${PR_BODY}$(cat /tmp/release-notes/temp_notes.md)"
+          PR_BODY="${PR_BODY}${RELEASE_NOTES}"
           PR_BODY="${PR_BODY}"$'\n\n'
           PR_BODY="${PR_BODY}This PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch."
           
