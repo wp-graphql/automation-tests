@@ -185,10 +185,11 @@ jobs:
             npm run release:notes > /tmp/release-notes/temp_notes_raw.md
           else
             # For other branches, filter by branch as before
+            echo "Generating release notes for ${{ steps.target_branch.outputs.name }} branch"
             npm run release:notes -- --branch="${{ steps.target_branch.outputs.name }}" > /tmp/release-notes/temp_notes_raw.md
           fi
           
-          # Remove the "Found X changesets" line and any lines starting with ">"
+          # Process the raw notes consistently
           grep -v "^>" /tmp/release-notes/temp_notes_raw.md | sed -n '/^Found/!p' > /tmp/release-notes/temp_notes.md
           
           # Make sure the file isn't empty
