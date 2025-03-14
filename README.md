@@ -422,6 +422,21 @@ For visual representations of the workflows, see [docs/WORKFLOW_VISUALIZATION.md
 7. The release management workflow creates a tag and GitHub release
 8. The plugin is deployed to the appropriate environments
 
+### Milestone Branch Workflow
+
+For larger features that span multiple PRs, we use a milestone branch workflow:
+
+1. Create a milestone branch with the `milestone/` prefix (e.g., `milestone/custom-scalars`)
+2. Create a GitHub Milestone with the same name (e.g., "custom-scalars")
+3. Create issues for each part of the implementation and assign them to the GitHub Milestone
+4. Create PRs against the milestone branch
+5. When PRs are merged to the milestone branch, changesets are automatically generated
+6. A PR from the milestone branch to `develop` is automatically created/updated
+7. When the milestone is complete, merge the milestone branch to `develop`
+8. The existing workflow will include the milestone changes in the next release
+
+For more details, see [Milestone Branch Workflow](.github/workflows/milestone-branch-workflow.md).
+
 ## Local Testing
 
 You can test the scripts locally:

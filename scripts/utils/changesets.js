@@ -7,6 +7,7 @@
 const fs = require('fs-extra');
 const path = require('path');
 const matter = require('gray-matter');
+const glob = require('glob');
 
 /**
  * Get the path to the changesets directory
@@ -71,10 +72,36 @@ async function readChangeset(filePath) {
  * 
  * @returns {Promise<Object[]>} Array of parsed changesets
  */
-async function readAllChangesets() {
-  const files = await getChangesetFiles();
-  const changesets = await Promise.all(files.map(readChangeset));
-  return changesets;
+async function readAllChangesets(branch = null) {
+  const dir = getChangesetDir();
+  
+  try {
+    const files = await fs.readdir(dir);
+    const changesets = await Promise.all(files.map(async file => {
+      const filepath = path.join(dir, file);
+      const content = await fs.readFile(filepath, 'utf8');
+      const { data, content: description } = matter(content);
+      
+      return {
+        ...data,
+        description: description.trim(),
+        file
+      };
+    }));
+    
+    if (branch) {
+      return changesets.filter(changeset => 
+        !changeset.branch || changeset.branch === branch
+      );
+    }
+    
+    return changesets;
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return [];
+    }
+    throw error;
+  }
 }
 
 /**
@@ -138,35 +165,34 @@ function categorizeChangesets(changesets = []) {
  * @param {string} data.author PR author
  * @param {string} data.type Change type (feat, fix, etc.)
  * @param {boolean} data.breaking Whether this is a breaking change
+ * @param {string} data.branch Branch where the changeset was created (default: develop)
  * @param {string} data.description PR description
  * @returns {Promise<string>} Path to the created changeset file
  */
-async function createChangeset(data) {
-  const { title, pr, author, type, breaking, description } = data;
+async function createChangeset({ title, pr, author, type, breaking, branch = 'develop', description = '' }) {
+  // Ensure the .changesets directory exists
+  const changesetDir = path.join(process.cwd(), '.changesets');
+  await fs.ensureDir(changesetDir);
   
-  // Ensure the changesets directory exists
-  const dir = await ensureChangesetDir();
+  // Generate a unique filename based on timestamp and PR number
+  const timestamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0];
+  const filename = `${timestamp}-pr-${pr}.md`;
+  const filepath = path.join(changesetDir, filename);
   
-  // Generate unique filename with timestamp and PR number
-  const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '');
-  const filename = path.join(dir, `${timestamp}-pr-${pr}.md`);
+  // Create the changeset content with frontmatter
+  const content = matter.stringify(description, {
+    title,
+    pr,
+    author,
+    type,
+    breaking,
+    branch
+  });
   
-  // Create changeset content
-  const content = matter.stringify(
-    description,
-    {
-      title,
-      pr,
-      author,
-      type,
-      breaking
-    }
-  );
+  // Write the changeset file
+  await fs.writeFile(filepath, content);
   
-  // Write changeset file
-  await fs.writeFile(filename, content);
-  
-  return filename;
+  return filepath;
 }
 
 /**

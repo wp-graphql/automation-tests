@@ -4,12 +4,13 @@
  * Script to generate release notes from changesets
  * 
  * Usage:
- *   node scripts/generate-release-notes.js [--format=markdown|json] [--repo-url=<url>] [--token=<github-token>]
+ *   node scripts/generate-release-notes.js [--format=markdown|json] [--repo-url=<url>] [--token=<github-token>] [--branch=<branch-name>]
  * 
  * Options:
  *   --format    Output format (markdown or json, default: markdown)
  *   --repo-url  Repository URL to use for PR links (default: extracted from package.json)
  *   --token     GitHub token for API requests (needed to identify first-time contributors)
+ *   --branch    Branch to generate release notes for (default: all branches)
  * 
  * Environment Variables:
  *   REPO_URL     Alternative to --repo-url parameter
@@ -39,6 +40,11 @@ const argv = yargs(hideBin(process.argv))
   .option('token', {
     type: 'string',
     description: 'GitHub token for API requests'
+  })
+  .option('branch', {
+    type: 'string',
+    description: 'Branch to generate release notes for',
+    default: null
   })
   .help()
   .argv;
@@ -282,25 +288,29 @@ async function generateJsonReleaseNotes(changesets, repoUrl, token) {
         title: changeset.title,
         pr: changeset.pr,
         author: changeset.author,
-        description: changeset.description
+        description: changeset.description,
+        branch: changeset.branch
       })),
       features: categories.features.map(changeset => ({
         title: changeset.title.replace(/^feat:\s*/i, ''),
         pr: changeset.pr,
         author: changeset.author,
-        description: changeset.description
+        description: changeset.description,
+        branch: changeset.branch
       })),
       fixes: categories.fixes.map(changeset => ({
         title: changeset.title.replace(/^fix:\s*/i, ''),
         pr: changeset.pr,
         author: changeset.author,
-        description: changeset.description
+        description: changeset.description,
+        branch: changeset.branch
       })),
       other: categories.other.map(changeset => ({
         title: changeset.title.replace(/^[^:]+:\s*/i, ''),
         pr: changeset.pr,
         author: changeset.author,
-        description: changeset.description
+        description: changeset.description,
+        branch: changeset.branch
       }))
     },
     contributors: Array.from(contributors).map(author => ({
@@ -320,8 +330,11 @@ async function generateReleaseNotes() {
   // Get GitHub token
   const token = getGitHubToken();
   
-  // Read all changesets
-  const changesets = await readAllChangesets();
+  // Read all changesets, filtering by branch if specified
+  const changesets = await readAllChangesets(argv.branch);
+  
+  // Log the number of changesets found
+  console.log(`Found ${changesets.length} changesets${argv.branch ? ` for branch ${argv.branch}` : ''}.`);
   
   // Generate release notes in the requested format
   if (argv.format === 'json') {
