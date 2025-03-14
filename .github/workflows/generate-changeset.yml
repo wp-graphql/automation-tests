@@ -180,8 +180,15 @@ jobs:
           mkdir -p /tmp/release-notes
           
           # Generate release notes from all changesets to a temporary file
-          # Pass the branch parameter to filter changesets for this branch
-          npm run release:notes -- --branch="${{ steps.target_branch.outputs.name }}" > /tmp/release-notes/temp_notes_raw.md
+          # For develop branch, include all changesets (including those from milestone branches)
+          if [[ "${{ steps.target_branch.outputs.name }}" == "develop" ]]; then
+            echo "Generating release notes for develop branch (including milestone branch changesets)"
+            npm run release:notes > /tmp/release-notes/temp_notes_raw.md
+          else
+            # For other branches, filter by branch
+            echo "Generating release notes for ${{ steps.target_branch.outputs.name }} branch"
+            npm run release:notes -- --branch="${{ steps.target_branch.outputs.name }}" > /tmp/release-notes/temp_notes_raw.md
+          fi
           
           # Remove the "Found X changesets" line and any lines starting with ">"
           grep -v "^>" /tmp/release-notes/temp_notes_raw.md | sed -n '/^Found/!p' > /tmp/release-notes/temp_notes.md
