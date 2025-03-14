@@ -50,7 +50,7 @@ When a PR is merged to a milestone branch, the changeset generation workflow:
 
 The workflow automatically creates and maintains a PR from the milestone branch to the develop branch:
 
-1. **PR Title**: `feat: feature-name 🚀`
+1. **PR Title**: `milestone: feature-name 🚀`
 2. **PR Body**: Contains:
    - Milestone information and progress
    - Link to the GitHub Milestone

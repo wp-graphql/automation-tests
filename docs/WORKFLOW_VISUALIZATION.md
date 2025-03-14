@@ -244,7 +244,7 @@ graph TD
     D[Feature Branch 3] -->|Create PR| B
     B -->|Merge PR| E[Generate Changeset]
     E -->|Commit Changeset| B
-    B -->|Create/Update PR| F[develop]
+    B -->|Create/Update PR with title "milestone: feature-name 🚀"| F[develop]
     F -->|Merge PR| G[Generate Changeset]
     G -->|Commit Changeset| F
     F -->|Create/Update PR| H[main]
