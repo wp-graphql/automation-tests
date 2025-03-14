@@ -16,3 +16,6 @@ require_once __DIR__ . '/constants.php';
 add_action( 'admin_notices', function() {
 	echo '<div class="notice notice-info"><p>😇 Automation Tests v' . AUTOMATION_TESTS_VERSION . '</p></div>';
 });
+
+// SCALARS:
+// - Email
