@@ -146,8 +146,9 @@ function parseChangesetContent(content) {
   const metadataLines = lines.filter(line => line.includes(':'));
   for (const line of metadataLines) {
     const [key, value] = line.split(':', 2).map(part => part.trim());
-    if (key === 'title') changeset.title = value;
-    else if (key === 'pr') changeset.pr = parseInt(value, 10) || null;
+    if (key === 'title') {
+      changeset.title = value.replace(/^['"]|['"]$/g, '');
+    } else if (key === 'pr') changeset.pr = parseInt(value, 10) || null;
     else if (key === 'author') changeset.author = value;
     else if (key === 'type') changeset.type = value;
     else if (key === 'breaking') changeset.breaking = value === 'true';
