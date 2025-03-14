@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## v4.0.4 - 2025-03-14
+
+> ⚠️ **BREAKING CHANGES**: This release contains breaking changes. Please review before upgrading.
+
+### Breaking Changes
+
+- 'fix!: angel emoji' ([#55](https://github.com/jasonbahl/automation-tests/pull/55))
+- 'feat!: package emoji' ([#5](https://github.com/jasonbahl/automation-tests/pull/5))
+- 'feat!: poop emoji' ([#53](https://github.com/jasonbahl/automation-tests/pull/53))
+
 ## v4.0.3 - 2025-03-13
 
 ### Other Changes
