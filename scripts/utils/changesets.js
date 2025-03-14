@@ -68,40 +68,55 @@ async function readChangeset(filePath) {
 }
 
 /**
- * Read all changesets
+ * Read all changesets from the .changesets directory
  * 
- * @returns {Promise<Object[]>} Array of parsed changesets
+ * @param {Object} options Options for reading changesets
+ * @param {string} options.branch Branch to filter changesets by
+ * @returns {Promise<Array>} Array of changeset objects
  */
-async function readAllChangesets(branch = null) {
-  const dir = getChangesetDir();
+async function readAllChangesets(options = {}) {
+  const { branch } = options;
   
-  try {
-    const files = await fs.readdir(dir);
-    const changesets = await Promise.all(files.map(async file => {
-      const filepath = path.join(dir, file);
-      const content = await fs.readFile(filepath, 'utf8');
-      const { data, content: description } = matter(content);
+  // Get all changeset files
+  const changesetDir = path.join(process.cwd(), '.changesets');
+  const files = await fs.readdir(changesetDir);
+  const changesetFiles = files.filter(file => file.endsWith('.md'));
+  
+  // Read each changeset file
+  const changesets = await Promise.all(
+    changesetFiles.map(async file => {
+      const filePath = path.join(changesetDir, file);
+      const content = await fs.readFile(filePath, 'utf8');
       
-      return {
-        ...data,
-        description: description.trim(),
-        file
-      };
-    }));
-    
-    if (branch) {
+      // Parse the changeset content
+      const changeset = parseChangeset(content);
+      
+      // Add the filename to the changeset
+      changeset.filename = file;
+      
+      return changeset;
+    })
+  );
+  
+  // If branch is specified, filter changesets by branch
+  if (branch) {
+    // Special case for develop branch - include milestone branch changesets
+    if (branch === 'develop') {
       return changesets.filter(changeset => 
-        !changeset.branch || changeset.branch === branch
+        changeset.branch === branch || 
+        changeset.branch === undefined || // Include changesets without branch info
+        changeset.branch.startsWith('milestone/')
       );
     }
     
-    return changesets;
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      return [];
-    }
-    throw error;
+    // Otherwise, filter by the specified branch
+    return changesets.filter(changeset => 
+      changeset.branch === branch || 
+      changeset.branch === undefined // Include changesets without branch info
+    );
   }
+  
+  return changesets;
 }
 
 /**

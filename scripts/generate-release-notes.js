@@ -125,6 +125,31 @@ async function isFirstTimeContributor(author, repoUrl, token) {
   }
 }
 
+// Update the readChangesets function to handle milestone branch changesets
+async function readChangesets(options = {}) {
+  const { branch } = options;
+  
+  // Read all changesets
+  const changesets = await readAllChangesets();
+  
+  // If no branch filter is specified, return all changesets
+  if (!branch) {
+    return changesets;
+  }
+  
+  // Special case: if branch is 'develop', include changesets from milestone branches
+  // This ensures that when milestone branches are merged to develop, their changesets are included
+  if (branch === 'develop') {
+    return changesets.filter(changeset => 
+      changeset.branch === branch || 
+      changeset.branch.startsWith('milestone/')
+    );
+  }
+  
+  // Otherwise, filter by the specified branch
+  return changesets.filter(changeset => changeset.branch === branch);
+}
+
 // Generate release notes in markdown format
 async function generateMarkdownReleaseNotes(changesets, repoUrl, token) {
   // Categorize changesets
@@ -331,7 +356,7 @@ async function generateReleaseNotes() {
   const token = getGitHubToken();
   
   // Read all changesets, filtering by branch if specified
-  const changesets = await readAllChangesets(argv.branch);
+  const changesets = await readChangesets({ branch: argv.branch });
   
   // Log the number of changesets found
   console.log(`Found ${changesets.length} changesets${argv.branch ? ` for branch ${argv.branch}` : ''}.`);
