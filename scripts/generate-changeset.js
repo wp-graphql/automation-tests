@@ -7,6 +7,7 @@
  *   node scripts/generate-changeset.js --pr=123 --title="feat: Add new feature" --author="username" --body="Description of the change"
  *   node scripts/generate-changeset.js --pr=123 --title="feat!: Add breaking feature" --author="username" --body="Description of the change"
  *   node scripts/generate-changeset.js --pr=123 --title="BREAKING CHANGE: Refactor API" --author="username" --body="Description of the change"
+ *   node scripts/generate-changeset.js --pr=123 --title="feat: Add new feature" --author="username" --body="Description of the change" --branch="milestone/custom-scalars"
  * 
  * Options:
  *   --pr         PR number
@@ -14,6 +15,7 @@
  *   --author     PR author
  *   --body       PR description
  *   --breaking   Explicitly mark as breaking change (true/false)
+ *   --branch     Branch where the changeset was created (default: develop)
  * 
  * Breaking Change Detection:
  *   Breaking changes are automatically detected from:
@@ -58,6 +60,11 @@ const argv = yargs(hideBin(process.argv))
     type: 'boolean',
     description: 'Whether the PR indicates a breaking change',
     default: false
+  })
+  .option('branch', {
+    type: 'string',
+    description: 'Branch where the changeset was created',
+    default: 'develop'
   })
   .help()
   .argv;
@@ -110,7 +117,7 @@ function isBreakingChange(title, body) {
  */
 async function generateChangeset() {
   // Extract PR information
-  const { pr, title, author, body } = argv;
+  const { pr, title, author, body, branch } = argv;
   const changeType = extractChangeType(title);
   const breaking = isBreakingChange(title, body);
 
@@ -121,6 +128,7 @@ async function generateChangeset() {
     author,
     type: changeType,
     breaking,
+    branch,
     description: body
   });
 

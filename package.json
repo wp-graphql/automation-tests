@@ -44,8 +44,5 @@
     "js-yaml": "^4.1.0",
     "lodash": "^4.17.21",
     "yargs": "^17.7.2"
-  },
-  "dependencies": {
-    "node-fetch": "^3.3.2"
   }
 }

@@ -16,11 +16,17 @@ on:
     types: [closed]
     branches:
       - develop
+      - 'milestone/**'  # Add support for milestone branches
   workflow_dispatch:
     inputs:
       pr_number:
         description: 'PR number to generate changeset for'
         required: true
+        type: string
+      target_branch:
+        description: 'Target branch for the changeset'
+        required: false
+        default: 'develop'
         type: string
 
 jobs:
@@ -53,7 +59,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.base.ref || 'develop' }}
+          ref: ${{ github.event.pull_request.base.ref || inputs.target_branch || 'develop' }}
           # Use a personal access token with repo scope for better permissions
           token: ${{ secrets.GITHUB_TOKEN }}
           
@@ -105,6 +111,27 @@ jobs:
           echo "pr_author=${PR_AUTHOR}" >> $GITHUB_OUTPUT
           echo "pr_body=${PR_BODY}" >> $GITHUB_OUTPUT
           
+      - name: Determine target branch
+        id: target_branch
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TARGET_BRANCH="${{ github.event.inputs.target_branch || 'develop' }}"
+          else
+            TARGET_BRANCH="${{ github.event.pull_request.base.ref }}"
+          fi
+          
+          echo "name=${TARGET_BRANCH}" >> $GITHUB_OUTPUT
+          
+          # Check if this is a milestone branch
+          if [[ "${TARGET_BRANCH}" == milestone/* ]]; then
+            echo "is_milestone=true" >> $GITHUB_OUTPUT
+            # Extract milestone name from branch name (e.g., milestone/custom-scalars -> custom-scalars)
+            MILESTONE_NAME=$(echo "${TARGET_BRANCH}" | sed 's/^milestone\///')
+            echo "milestone_name=${MILESTONE_NAME}" >> $GITHUB_OUTPUT
+          else
+            echo "is_milestone=false" >> $GITHUB_OUTPUT
+          fi
+          
       - name: Generate changeset for current PR
         run: |
           # Generate a changeset for the current PR
@@ -112,7 +139,8 @@ jobs:
             --pr="${{ steps.pr_info.outputs.pr_number }}" \
             --title="${{ steps.pr_info.outputs.pr_title }}" \
             --author="${{ steps.pr_info.outputs.pr_author }}" \
-            --body="${{ steps.pr_info.outputs.pr_body }}"
+            --body="${{ steps.pr_info.outputs.pr_body }}" \
+            --branch="${{ steps.target_branch.outputs.name }}"
           
           # Commit and push the changeset
           git config --global user.name "GitHub Actions"
@@ -134,31 +162,12 @@ jobs:
           # Create a temporary directory for release notes
           mkdir -p /tmp/release-notes
           
-          # Generate release notes directly to see the raw output
-          echo "Raw output from release:notes command:"
-          npm run release:notes
-          
           # Generate release notes from all changesets to a temporary file
-          # Don't filter with grep initially to see what we're getting
-          npm run release:notes > /tmp/release-notes/temp_notes_raw.md
+          # Pass the branch parameter to filter changesets for this branch
+          npm run release:notes -- --branch="${{ steps.target_branch.outputs.name }}" > /tmp/release-notes/temp_notes_raw.md
           
-          # Show the raw content
-          echo "Raw content of temp_notes_raw.md:"
-          cat /tmp/release-notes/temp_notes_raw.md
-          
-          # Now apply filtering if needed
-          cat /tmp/release-notes/temp_notes_raw.md | grep -v "^>" > /tmp/release-notes/temp_notes_filtered.md
-          
-          # Show filtered content
-          echo "Filtered content:"
-          cat /tmp/release-notes/temp_notes_filtered.md
-          
-          # Apply sed filtering
-          sed -n '/^Found/!p' /tmp/release-notes/temp_notes_filtered.md > /tmp/release-notes/temp_notes.md
-          
-          # Show final content
-          echo "Final release notes content:"
-          cat /tmp/release-notes/temp_notes.md
+          # Remove the "Found X changesets" line and any lines starting with ">"
+          grep -v "^>" /tmp/release-notes/temp_notes_raw.md | sed -n '/^Found/!p' > /tmp/release-notes/temp_notes.md
           
           # Make sure the file isn't empty
           if [ ! -s /tmp/release-notes/temp_notes.md ]; then
@@ -166,8 +175,210 @@ jobs:
             echo "No changes documented yet. This will be updated when changesets are processed." > /tmp/release-notes/temp_notes.md
           fi
           
+          # For debugging
+          echo "Generated release notes:"
+          cat /tmp/release-notes/temp_notes.md
+          
+      # For milestone branches, check for a PR to develop
+      - name: Check for existing milestone PR to develop
+        id: check_milestone_pr
+        if: steps.target_branch.outputs.is_milestone == 'true'
+        run: |
+          # Check if there's already a PR from this milestone branch to develop
+          PR_LIST=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls?state=open&head=${{ github.repository_owner }}:${{ steps.target_branch.outputs.name }}&base=develop")
+          
+          PR_COUNT=$(echo "$PR_LIST" | jq length)
+          
+          if [[ "$PR_COUNT" -gt 0 ]]; then
+            PR_NUMBER=$(echo "$PR_LIST" | jq -r '.[0].number')
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "number=${PR_NUMBER}" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+          
+      # For milestone branches, get milestone information if it exists
+      - name: Get milestone information
+        id: milestone_info
+        if: steps.target_branch.outputs.is_milestone == 'true'
+        run: |
+          # Get milestone data
+          MILESTONE_NAME="${{ steps.target_branch.outputs.milestone_name }}"
+          
+          MILESTONE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/milestones?state=open")
+          
+          MILESTONE_INFO=$(echo "$MILESTONE_DATA" | jq -r ".[] | select(.title == \"$MILESTONE_NAME\")")
+          
+          if [[ -n "$MILESTONE_INFO" && "$MILESTONE_INFO" != "null" ]]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            MILESTONE_NUMBER=$(echo "$MILESTONE_INFO" | jq -r '.number')
+            MILESTONE_URL=$(echo "$MILESTONE_INFO" | jq -r '.html_url')
+            MILESTONE_OPEN=$(echo "$MILESTONE_INFO" | jq -r '.open_issues')
+            MILESTONE_CLOSED=$(echo "$MILESTONE_INFO" | jq -r '.closed_issues')
+            MILESTONE_TOTAL=$((MILESTONE_OPEN + MILESTONE_CLOSED))
+            
+            if [[ "$MILESTONE_TOTAL" -gt 0 ]]; then
+              MILESTONE_PERCENT=$((MILESTONE_CLOSED * 100 / MILESTONE_TOTAL))
+            else
+              MILESTONE_PERCENT=0
+            fi
+            
+            echo "number=${MILESTONE_NUMBER}" >> $GITHUB_OUTPUT
+            echo "url=${MILESTONE_URL}" >> $GITHUB_OUTPUT
+            echo "open=${MILESTONE_OPEN}" >> $GITHUB_OUTPUT
+            echo "closed=${MILESTONE_CLOSED}" >> $GITHUB_OUTPUT
+            echo "total=${MILESTONE_TOTAL}" >> $GITHUB_OUTPUT
+            echo "percent=${MILESTONE_PERCENT}" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+          
+      # For milestone branches, update existing PR to develop
+      - name: Update existing milestone PR to develop
+        if: steps.target_branch.outputs.is_milestone == 'true' && steps.check_milestone_pr.outputs.exists == 'true'
+        run: |
+          # Update the PR body with the latest milestone notes
+          PR_NUMBER="${{ steps.check_milestone_pr.outputs.number }}"
+          
+          # Get current PR data
+          PR_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}")
+          
+          PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
+          
+          # Create the PR body with proper formatting
+          PR_BODY="## Milestone: ${{ steps.target_branch.outputs.milestone_name }}"
+          
+          # Add milestone progress information if available
+          if [[ "${{ steps.milestone_info.outputs.exists }}" == "true" ]]; then
+            PR_BODY="${PR_BODY}"$'\n\n'
+            PR_BODY="${PR_BODY}**Progress:** ${{ steps.milestone_info.outputs.closed }}/${{ steps.milestone_info.outputs.total }} issues completed (${{ steps.milestone_info.outputs.percent }}%)"
+            PR_BODY="${PR_BODY}"$'\n\n'
+            PR_BODY="${PR_BODY}[View Milestone](${{ steps.milestone_info.outputs.url }})"
+          fi
+          
+          PR_BODY="${PR_BODY}"$'\n\n'
+          PR_BODY="${PR_BODY}## Changes in this Milestone"
+          PR_BODY="${PR_BODY}"$'\n\n'
+          PR_BODY="${PR_BODY}$(cat /tmp/release-notes/temp_notes.md)"
+          PR_BODY="${PR_BODY}"$'\n\n'
+          PR_BODY="${PR_BODY}This PR contains all changes for the ${{ steps.target_branch.outputs.milestone_name }} milestone. It is automatically updated when new changesets are added to the milestone branch."
+          
+          # Use jq to properly escape the content
+          PAYLOAD=$(jq -n --arg body "$PR_BODY" --arg title "$PR_TITLE" '{body: $body, title: $title}')
+          
+          # For debugging
+          echo "API Payload:"
+          echo "$PAYLOAD" | jq '.'
+          
+          # Update the PR
+          RESPONSE=$(curl -X PATCH \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}" \
+            -d "$PAYLOAD")
+            
+          # Print full response for debugging
+          echo "Full API Response:"
+          echo "$RESPONSE" | jq '.'
+          
+          echo "Updated existing milestone PR #${PR_NUMBER} with latest changes"
+          
+      # For milestone branches, create a new PR to develop if one doesn't exist
+      - name: Create new milestone PR to develop
+        if: steps.target_branch.outputs.is_milestone == 'true' && steps.check_milestone_pr.outputs.exists == 'false'
+        run: |
+          # Create a new PR from milestone branch to develop
+          PR_TITLE="feat: ${{ steps.target_branch.outputs.milestone_name }} 🚀"
+          
+          # Create the PR body with proper formatting
+          PR_BODY="## Milestone: ${{ steps.target_branch.outputs.milestone_name }}"
+          
+          # Add milestone progress information if available
+          if [[ "${{ steps.milestone_info.outputs.exists }}" == "true" ]]; then
+            PR_BODY="${PR_BODY}"$'\n\n'
+            PR_BODY="${PR_BODY}**Progress:** ${{ steps.milestone_info.outputs.closed }}/${{ steps.milestone_info.outputs.total }} issues completed (${{ steps.milestone_info.outputs.percent }}%)"
+            PR_BODY="${PR_BODY}"$'\n\n'
+            PR_BODY="${PR_BODY}[View Milestone](${{ steps.milestone_info.outputs.url }})"
+          fi
+          
+          PR_BODY="${PR_BODY}"$'\n\n'
+          PR_BODY="${PR_BODY}## Changes in this Milestone"
+          PR_BODY="${PR_BODY}"$'\n\n'
+          PR_BODY="${PR_BODY}$(cat /tmp/release-notes/temp_notes.md)"
+          PR_BODY="${PR_BODY}"$'\n\n'
+          PR_BODY="${PR_BODY}This PR contains all changes for the ${{ steps.target_branch.outputs.milestone_name }} milestone. It is automatically updated when new changesets are added to the milestone branch."
+          
+          # Use jq to properly escape the content
+          PAYLOAD=$(jq -n \
+            --arg title "$PR_TITLE" \
+            --arg head "${{ steps.target_branch.outputs.name }}" \
+            --arg base "develop" \
+            --arg body "$PR_BODY" \
+            '{title: $title, head: $head, base: $base, body: $body}')
+          
+          # For debugging
+          echo "API Payload:"
+          echo "$PAYLOAD" | jq '.'
+          
+          # Create a new PR from milestone branch to develop
+          RESPONSE=$(curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls" \
+            -d "$PAYLOAD")
+          
+          # Print full response for debugging
+          echo "Full API Response:"
+          echo "$RESPONSE" | jq '.'
+          
+          # Check for error messages
+          ERROR_MESSAGE=$(echo "$RESPONSE" | jq -r '.message // "No error message"')
+          if [[ "$ERROR_MESSAGE" != "No error message" ]]; then
+            echo "Error creating PR: $ERROR_MESSAGE"
+            
+            # Check for more detailed errors
+            ERRORS=$(echo "$RESPONSE" | jq -r '.errors // []')
+            if [[ "$ERRORS" != "[]" ]]; then
+              echo "Detailed errors: $ERRORS"
+            fi
+            
+            exit 1
+          fi
+          
+          PR_NUMBER=$(echo "$RESPONSE" | jq -r '.number')
+          
+          if [[ -z "$PR_NUMBER" || "$PR_NUMBER" == "null" ]]; then
+            echo "Failed to create PR. No PR number returned."
+            exit 1
+          else
+            echo "Created new milestone PR #${PR_NUMBER} from ${{ steps.target_branch.outputs.name }} to develop"
+            
+            # If milestone exists, assign PR to milestone
+            if [[ "${{ steps.milestone_info.outputs.exists }}" == "true" ]]; then
+              MILESTONE_NUMBER="${{ steps.milestone_info.outputs.number }}"
+              
+              # Assign PR to milestone
+              ASSIGN_RESPONSE=$(curl -X PATCH \
+                -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                -H "Accept: application/vnd.github.v3+json" \
+                -H "Content-Type: application/json" \
+                "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}" \
+                -d "{\"milestone\": $MILESTONE_NUMBER}")
+                
+              echo "Assigned PR #${PR_NUMBER} to milestone ${{ steps.target_branch.outputs.milestone_name }}"
+            fi
+          fi
+          
+      # For develop branch, check for existing release PR
       - name: Check for existing release PR
         id: check_pr
+        if: steps.target_branch.outputs.is_milestone != 'true'
         run: |
           # Check if there's already a PR from develop to main
           PR_LIST=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
@@ -184,8 +395,9 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
           
+      # For develop branch, update existing release PR
       - name: Update existing release PR
-        if: steps.check_pr.outputs.exists == 'true'
+        if: steps.target_branch.outputs.is_milestone != 'true' && steps.check_pr.outputs.exists == 'true'
         run: |
           # Update the PR body with the latest changelog
           PR_NUMBER="${{ steps.check_pr.outputs.number }}"
@@ -196,20 +408,10 @@ jobs:
           
           PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
           
-          # Check if release notes file exists and has content
-          if [ -s /tmp/release-notes/temp_notes.md ]; then
-            RELEASE_NOTES=$(cat /tmp/release-notes/temp_notes.md)
-            echo "Using generated release notes:"
-            echo "$RELEASE_NOTES"
-          else
-            RELEASE_NOTES="No changes documented yet. This will be updated when changesets are processed."
-            echo "Using fallback release notes"
-          fi
-          
           # Create the PR body with proper formatting
           PR_BODY="## Upcoming Changes"
           PR_BODY="${PR_BODY}"$'\n\n'
-          PR_BODY="${PR_BODY}${RELEASE_NOTES}"
+          PR_BODY="${PR_BODY}$(cat /tmp/release-notes/temp_notes.md)"
           PR_BODY="${PR_BODY}"$'\n\n'
           PR_BODY="${PR_BODY}This PR contains all changes that will be included in the next release. It is automatically updated when new changesets are added to the develop branch."
           
@@ -234,8 +436,9 @@ jobs:
           
           echo "Updated existing release PR #${PR_NUMBER} with latest changelog"
           
+      # For develop branch, create new release PR
       - name: Create new release PR
-        if: steps.check_pr.outputs.exists == 'false'
+        if: steps.target_branch.outputs.is_milestone != 'true' && steps.check_pr.outputs.exists == 'false'
         run: |
           # Create the PR body with proper formatting
           PR_BODY="## Upcoming Changes"

@@ -220,4 +220,84 @@ gitGraph
     merge main id: "Sync v1.1.0 back to develop"
 ```
 
+## Standard Workflow
+
+```mermaid
+graph TD
+    A[Feature Branch] -->|Create PR| B[develop]
+    B -->|Merge PR| C[Generate Changeset]
+    C -->|Commit Changeset| B
+    B -->|Create/Update PR| D[main]
+    D -->|Merge PR| E[Release Management]
+    E -->|Version Bump| F[Create Tag]
+    F -->|Push Tag| G[Deploy]
+    G -->|Create GitHub Release| H[WordPress.org SVN]
+    E -->|Sync Changes| B
+```
+
+## Milestone Branch Workflow
+
+```mermaid
+graph TD
+    A[Feature Branch 1] -->|Create PR| B[milestone/feature]
+    C[Feature Branch 2] -->|Create PR| B
+    D[Feature Branch 3] -->|Create PR| B
+    B -->|Merge PR| E[Generate Changeset]
+    E -->|Commit Changeset| B
+    B -->|Create/Update PR| F[develop]
+    F -->|Merge PR| G[Generate Changeset]
+    G -->|Commit Changeset| F
+    F -->|Create/Update PR| H[main]
+    H -->|Merge PR| I[Release Management]
+    I -->|Version Bump| J[Create Tag]
+    J -->|Push Tag| K[Deploy]
+    K -->|Create GitHub Release| L[WordPress.org SVN]
+    I -->|Sync Changes| F
+```
+
+## Milestone Branch Integration
+
+```mermaid
+sequenceDiagram
+    participant FB as Feature Branches
+    participant MB as Milestone Branch
+    participant GH as GitHub Actions
+    participant MS as GitHub Milestone
+    participant PR as Milestone PR
+    participant D as develop
+    
+    FB->>MB: Create PRs
+    MB->>GH: Merge PRs
+    GH->>MB: Generate changesets
+    GH->>MS: Update progress
+    GH->>PR: Update PR to develop
+    MB->>D: Merge when complete
+    D->>GH: Include milestone changes in next release
+```
+
+## Complete Workflow with Milestone Branches
+
+```mermaid
+graph TD
+    A[Feature Branch] -->|Create PR| B[develop]
+    C[Feature Branch 1] -->|Create PR| D[milestone/feature]
+    E[Feature Branch 2] -->|Create PR| D
+    F[Feature Branch 3] -->|Create PR| D
+    
+    B -->|Merge PR| G[Generate Changeset for develop]
+    D -->|Merge PR| H[Generate Changeset for milestone]
+    
+    G -->|Commit Changeset| B
+    H -->|Commit Changeset| D
+    
+    D -->|Create/Update PR| B
+    B -->|Create/Update PR| I[main]
+    
+    I -->|Merge PR| J[Release Management]
+    J -->|Version Bump| K[Create Tag]
+    K -->|Push Tag| L[Deploy]
+    L -->|Create GitHub Release| M[WordPress.org SVN]
+    J -->|Sync Changes| B
+```
+
 These visualizations provide a comprehensive overview of how the different components of the automation system interact. They can be especially helpful for new contributors to understand the workflow and for maintainers to identify potential areas for improvement. 

@@ -21,6 +21,9 @@
 ## Workflows
 
 - **generate-changeset.yml**: Automatically generates a changeset file when a PR is merged to develop.
+  - Now supports milestone branches with the `milestone/` prefix
+  - Automatically creates/updates a PR from the milestone branch to develop
+  - Integrates with GitHub Milestones for progress tracking
 - **release-management.yml**: Handles version bumping, changelog updates, and release creation when changes are merged to main.
   - Now includes improved sync between main and develop branches after releases
     - Uses a non-fast-forward merge strategy with a descriptive commit message
@@ -43,6 +46,7 @@
   - Changeset generation process with temporary file handling
   - Release management workflow
   - Deployment process
+  - Milestone branch workflow
 - Added examples and usage instructions for all scripts
 - Documented breaking change detection and handling
 - Added information about the new `generate-release-notes.js` script and how to use it locally
@@ -73,6 +77,11 @@
 
 ## Recent Updates
 
+- **Milestone Branch Support**: Added support for milestone branches with the `milestone/` prefix.
+  - Allows for development of larger features that span multiple PRs
+  - Automatically creates/updates a PR from the milestone branch to develop
+  - Integrates with GitHub Milestones for progress tracking
+  - Provides detailed release notes for milestone branches
 - **Environment Variables Support**: Added support for environment variables (`REPO_URL` and `GITHUB_TOKEN`) to simplify configuration and usage of the release notes script.
 - **Contributor Recognition**: Enhanced release notes to include a contributors section with special recognition for first-time contributors.
 - **GitHub Workflow Improvements**: Updated the GitHub workflow to use environment variables instead of command-line arguments, making it cleaner and more maintainable.
