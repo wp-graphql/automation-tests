@@ -20,6 +20,7 @@ add_action( 'admin_notices', function() {
 // SCALARS:
 // - Email
 // - Phone
+// - DateTime
 
 // BREAKING CHANGE
 // We're simulating a breaking change with this comment.
