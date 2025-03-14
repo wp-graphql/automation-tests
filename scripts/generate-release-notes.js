@@ -150,12 +150,11 @@ async function readChangesets(options = {}) {
   return changesets.filter(changeset => changeset.branch === branch);
 }
 
-// Update the function that formats the changeset entries
+// Ensure consistent formatting for changeset entries
 function formatChangesetEntry(changeset) {
-  // Remove any single quotes that might be wrapping the title
+  // Clean up the title (remove quotes, ensure proper format)
   const title = changeset.title.replace(/^['"]|['"]$/g, '');
   
-  // Ensure we have the full title
   return `* **${title}** (#${changeset.pr}) - @${changeset.author}`;
 }
 
