@@ -136,7 +136,15 @@ async function generateMarkdownReleaseNotes(changesets, repoUrl, token) {
     
     for (const changeset of categories.breaking) {
       const prLink = repoUrl ? `([#${changeset.pr}](${repoUrl}/pull/${changeset.pr}))` : `(#${changeset.pr})`;
-      notes += `- **${changeset.title}** ${prLink} - @${changeset.author}\n`;
+      const prefixRegex = /^(feat!?|fix!?|docs!?|style!?|refactor!?|perf!?|test!?|build!?|ci!?|chore!?|revert!?)(\([^)]+\))?:/;
+      const match = changeset.title.match(prefixRegex);
+      if (match) {
+        const prefix = changeset.title.substring(0, match[0].length);
+        const restOfTitle = changeset.title.substring(match[0].length).trim();
+        notes += `- **${prefix}** ${restOfTitle} ${prLink} - @${changeset.author}\n`;
+      } else {
+        notes += `- **${changeset.title}** ${prLink} - @${changeset.author}\n`;
+      }
     }
     
     notes += `\n`;
@@ -148,7 +156,15 @@ async function generateMarkdownReleaseNotes(changesets, repoUrl, token) {
     
     for (const changeset of categories.features) {
       const prLink = repoUrl ? `([#${changeset.pr}](${repoUrl}/pull/${changeset.pr}))` : `(#${changeset.pr})`;
-      notes += `- **${changeset.title.replace(/^feat:\s*/i, '')}** ${prLink} - @${changeset.author}\n`;
+      const prefixRegex = /^(feat!?|fix!?|docs!?|style!?|refactor!?|perf!?|test!?|build!?|ci!?|chore!?|revert!?)(\([^)]+\))?:/;
+      const match = changeset.title.match(prefixRegex);
+      if (match) {
+        const prefix = changeset.title.substring(0, match[0].length);
+        const restOfTitle = changeset.title.substring(match[0].length).trim();
+        notes += `- **${prefix}** ${restOfTitle} ${prLink} - @${changeset.author}\n`;
+      } else {
+        notes += `- **${changeset.title.replace(/^feat:\s*/i, '')}** ${prLink} - @${changeset.author}\n`;
+      }
     }
     
     notes += `\n`;
@@ -160,7 +176,15 @@ async function generateMarkdownReleaseNotes(changesets, repoUrl, token) {
     
     for (const changeset of categories.fixes) {
       const prLink = repoUrl ? `([#${changeset.pr}](${repoUrl}/pull/${changeset.pr}))` : `(#${changeset.pr})`;
-      notes += `- **${changeset.title.replace(/^fix:\s*/i, '')}** ${prLink} - @${changeset.author}\n`;
+      const prefixRegex = /^(feat!?|fix!?|docs!?|style!?|refactor!?|perf!?|test!?|build!?|ci!?|chore!?|revert!?)(\([^)]+\))?:/;
+      const match = changeset.title.match(prefixRegex);
+      if (match) {
+        const prefix = changeset.title.substring(0, match[0].length);
+        const restOfTitle = changeset.title.substring(match[0].length).trim();
+        notes += `- **${prefix}** ${restOfTitle} ${prLink} - @${changeset.author}\n`;
+      } else {
+        notes += `- **${changeset.title.replace(/^fix:\s*/i, '')}** ${prLink} - @${changeset.author}\n`;
+      }
     }
     
     notes += `\n`;
@@ -172,7 +196,15 @@ async function generateMarkdownReleaseNotes(changesets, repoUrl, token) {
     
     for (const changeset of categories.other) {
       const prLink = repoUrl ? `([#${changeset.pr}](${repoUrl}/pull/${changeset.pr}))` : `(#${changeset.pr})`;
-      notes += `- **${changeset.title.replace(/^[^:]+:\s*/i, '')}** ${prLink} - @${changeset.author}\n`;
+      const prefixRegex = /^(feat!?|fix!?|docs!?|style!?|refactor!?|perf!?|test!?|build!?|ci!?|chore!?|revert!?)(\([^)]+\))?:/;
+      const match = changeset.title.match(prefixRegex);
+      if (match) {
+        const prefix = changeset.title.substring(0, match[0].length);
+        const restOfTitle = changeset.title.substring(match[0].length).trim();
+        notes += `- **${prefix}** ${restOfTitle} ${prLink} - @${changeset.author}\n`;
+      } else {
+        notes += `- **${changeset.title.replace(/^[^:]+:\s*/i, '')}** ${prLink} - @${changeset.author}\n`;
+      }
     }
     
     notes += `\n`;
