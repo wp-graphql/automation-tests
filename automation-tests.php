@@ -22,6 +22,7 @@ add_action( 'admin_notices', function() {
 // - Phone
 // - DateTime
 // - Date
+// - Time
 // - URL
 
 // BREAKING CHANGE
