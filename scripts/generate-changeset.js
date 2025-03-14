@@ -16,6 +16,8 @@
  *   --body       PR description
  *   --breaking   Explicitly mark as breaking change (true/false)
  *   --branch     Branch where the changeset was created (default: develop)
+ *   --source     Source branch of the PR (optional)
+ *   --target     Target branch of the PR (optional)
  * 
  * Breaking Change Detection:
  *   Breaking changes are automatically detected from:
@@ -23,6 +25,10 @@
  *   2. Title prefixed with "BREAKING CHANGE:" or "BREAKING-CHANGE:"
  *   3. Description containing "BREAKING CHANGE:" or "BREAKING-CHANGE:"
  *   4. Explicit --breaking=true flag
+ * 
+ * Special Cases:
+ *   - When a PR is from a milestone branch to develop, we skip changeset generation
+ *     as those changes already have changesets in the milestone branch.
  */
 
 const yargs = require('yargs/yargs');
@@ -66,6 +72,16 @@ const argv = yargs(hideBin(process.argv))
     description: 'Branch where the changeset was created',
     default: 'develop'
   })
+  .option('source', {
+    type: 'string',
+    description: 'Source branch of the PR',
+    default: ''
+  })
+  .option('target', {
+    type: 'string',
+    description: 'Target branch of the PR',
+    default: ''
+  })
   .help()
   .argv;
 
@@ -76,7 +92,7 @@ const argv = yargs(hideBin(process.argv))
  * @returns {string} Change type
  */
 function extractChangeType(title) {
-  const match = title.match(/^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert):/);
+  const match = title.match(/^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert|milestone):/);
   return match ? match[1] : 'other';
 }
 
@@ -113,11 +129,30 @@ function isBreakingChange(title, body) {
 }
 
 /**
+ * Check if this is a PR from a milestone branch to develop
+ * 
+ * @param {string} source Source branch of the PR
+ * @param {string} target Target branch of the PR
+ * @returns {boolean} Whether this is a milestone PR to develop
+ */
+function isMilestonePrToDevelop(source, target) {
+  return source.startsWith('milestone/') && target === 'develop';
+}
+
+/**
  * Generate a changeset file
  */
 async function generateChangeset() {
   // Extract PR information
-  const { pr, title, author, body, branch } = argv;
+  const { pr, title, author, body, branch, source, target } = argv;
+  
+  // Skip changeset generation for PRs from milestone branches to develop
+  if (source && target && isMilestonePrToDevelop(source, target)) {
+    console.log(`Skipping changeset generation for PR #${pr} from milestone branch ${source} to develop.`);
+    console.log('Changesets for these changes already exist in the milestone branch.');
+    return;
+  }
+  
   const changeType = extractChangeType(title);
   const breaking = isBreakingChange(title, body);
 

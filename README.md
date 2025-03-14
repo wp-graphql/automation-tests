@@ -424,18 +424,18 @@ For visual representations of the workflows, see [docs/WORKFLOW_VISUALIZATION.md
 
 ### Milestone Branch Workflow
 
-For larger features that span multiple PRs, we use a milestone branch workflow:
+For larger features that span multiple PRs, we use milestone branches. These branches follow the naming convention `milestone/feature-name` and are associated with GitHub Milestones.
 
-1. Create a milestone branch with the `milestone/` prefix (e.g., `milestone/custom-scalars`)
-2. Create a GitHub Milestone with the same name (e.g., "custom-scalars")
-3. Create issues for each part of the implementation and assign them to the GitHub Milestone
-4. Create PRs against the milestone branch
-5. When PRs are merged to the milestone branch, changesets are automatically generated
-6. A PR from the milestone branch to `develop` is automatically created/updated
-7. When the milestone is complete, merge the milestone branch to `develop`
-8. The existing workflow will include the milestone changes in the next release
+### Key Features:
 
-For more details, see [Milestone Branch Workflow](.github/workflows/milestone-branch-workflow.md).
+1. **Branch Naming**: Use `milestone/feature-name` for milestone branches
+2. **GitHub Milestone Integration**: Create a GitHub Milestone with the same name as your feature
+3. **PR Management**: Create PRs against the milestone branch for individual components
+4. **Changeset Generation**: Each PR merged to the milestone branch generates a changeset
+5. **Milestone PR**: A PR from the milestone branch to develop is automatically created/updated
+6. **Changeset Handling**: When merging to develop, no new changeset is generated for the milestone PR itself, as all changes already have changesets
+
+For detailed documentation, see [Milestone Branch Workflow](.github/workflows/milestone-branch-workflow.md).
 
 ## Local Testing
 
