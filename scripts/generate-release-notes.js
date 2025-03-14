@@ -134,7 +134,7 @@ async function generateMarkdownReleaseNotes(changesets, repoUrl, token) {
   const bumpType = determineBumpType(changesets);
   
   // Start building the release notes
-  let notes = `## Release Notes\n\n`;
+  let notes = ``;
   
   // Add breaking changes section if there are any
   if (categories.breaking.length > 0) {

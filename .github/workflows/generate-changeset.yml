@@ -310,7 +310,7 @@ jobs:
         if: steps.target_branch.outputs.is_milestone == 'true' && steps.check_milestone_pr.outputs.exists == 'false'
         run: |
           # Create a new PR from milestone branch to develop
-          PR_TITLE="feat: ${{ steps.target_branch.outputs.milestone_name }} 🚀"
+          PR_TITLE="milestone: ${{ steps.target_branch.outputs.milestone_name }} 🚀"
           
           # Create the PR body with proper formatting
           PR_BODY="## Milestone: ${{ steps.target_branch.outputs.milestone_name }}"
