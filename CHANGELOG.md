@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## v4.0.5 - 2025-03-15
+
+> ⚠️ **BREAKING CHANGES**: This release contains breaking changes. Please review before upgrading.
+
+### Breaking Changes
+
+- 'feat!: breaking change' ([#61](https://github.com/jasonbahl/automation-tests/pull/61))
+
+### New Features
+
+- 'feat: url scalar' ([#67](https://github.com/jasonbahl/automation-tests/pull/67))
+- 'feat: date scalar' ([#65](https://github.com/jasonbahl/automation-tests/pull/65))
+- 'feat: datetime-scalar' ([#62](https://github.com/jasonbahl/automation-tests/pull/62))
+- 'feat: phone scalar' ([#60](https://github.com/jasonbahl/automation-tests/pull/60))
+- 'feat: email scalar' ([#59](https://github.com/jasonbahl/automation-tests/pull/59))
+
 ## v4.0.4 - 2025-03-14
 
 > ⚠️ **BREAKING CHANGES**: This release contains breaking changes. Please review before upgrading.
