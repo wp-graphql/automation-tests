@@ -179,15 +179,9 @@ jobs:
           # Create a temporary directory for release notes
           mkdir -p /tmp/release-notes
           
-          # For develop branch, don't filter by branch to include all changesets
-          if [[ "${{ steps.target_branch.outputs.name }}" == "develop" ]]; then
-            echo "Generating release notes for develop branch (including milestone branch changesets)"
-            npm run release:notes > /tmp/release-notes/temp_notes_raw.md
-          else
-            # For other branches, filter by branch as before
-            echo "Generating release notes for ${{ steps.target_branch.outputs.name }} branch"
-            npm run release:notes -- --branch="${{ steps.target_branch.outputs.name }}" > /tmp/release-notes/temp_notes_raw.md
-          fi
+          # Generate release notes with consistent formatting
+          echo "Generating release notes..."
+          npm run release:notes > /tmp/release-notes/temp_notes_raw.md
           
           # Process the raw notes consistently
           grep -v "^>" /tmp/release-notes/temp_notes_raw.md | sed -n '/^Found/!p' > /tmp/release-notes/temp_notes.md

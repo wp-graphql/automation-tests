@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Automation Tests
  * Description: A plugin to test automation workflows.
- * Version: 4.0.4
+ * Version: 4.0.5
  * Author: Jason Bahl
  */
 
@@ -22,6 +22,9 @@ add_action( 'admin_notices', function() {
 // - Phone
 // - DateTime
 // - Date
+// - Time
+// - URL
+// - A-Scalar
 
 // BREAKING CHANGE
 // We're simulating a breaking change with this comment.

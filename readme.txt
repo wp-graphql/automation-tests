@@ -3,7 +3,7 @@ Contributors: jasonbahl
 Tags: testing, automation
 Requires at least: 5.0
 Tested up to: 6.2
-Stable tag: 4.0.4
+Stable tag: 4.0.5
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -27,13 +27,11 @@ This plugin is a testing ground for GitHub Actions workflows before implementing
 
 == Upgrade Notice ==
 
-= 4.0.4 =
+= 4.0.5 =
 
 **⚠️ BREAKING CHANGES**: This release contains breaking changes that may require updates to your code.
 
-* 'fix!: angel emoji' (https://github.com/jasonbahl/automation-tests/pull/55)
-* 'feat!: package emoji' (https://github.com/jasonbahl/automation-tests/pull/5)
-* 'feat!: poop emoji' (https://github.com/jasonbahl/automation-tests/pull/53)
+* 'feat!: breaking change' (https://github.com/jasonbahl/automation-tests/pull/61)
 
 Please review these changes before upgrading.
 
@@ -72,15 +70,31 @@ Please review these changes before upgrading.
 
 == Changelog ==
 
-= 4.0.4 =
+= 4.0.5 =
 
 **⚠️ BREAKING CHANGES**: This release contains breaking changes. Please review before upgrading.
 
 **Breaking Changes**
 
+* 'feat!: breaking change' (https://github.com/jasonbahl/automation-tests/pull/61)
+
+**New Features**
+
+* 'feat: url scalar' (https://github.com/jasonbahl/automation-tests/pull/67)
+* 'feat: date scalar' (https://github.com/jasonbahl/automation-tests/pull/65)
+* 'feat: datetime-scalar' (https://github.com/jasonbahl/automation-tests/pull/62)
+* 'feat: phone scalar' (https://github.com/jasonbahl/automation-tests/pull/60)
+* 'feat: email scalar' (https://github.com/jasonbahl/automation-tests/pull/59)
+
+= 4.0.4 =
+
+**⚠️ BREAKING CHANGES**: This release contains breaking changes that may require updates to your code.
+
 * 'fix!: angel emoji' (https://github.com/jasonbahl/automation-tests/pull/55)
 * 'feat!: package emoji' (https://github.com/jasonbahl/automation-tests/pull/5)
 * 'feat!: poop emoji' (https://github.com/jasonbahl/automation-tests/pull/53)
+
+Please review these changes before upgrading.
 
 = 4.0.3 =
 

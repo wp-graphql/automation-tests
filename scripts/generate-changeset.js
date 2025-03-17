@@ -156,6 +156,9 @@ async function generateChangeset() {
   const changeType = extractChangeType(title);
   const breaking = isBreakingChange(title, body);
 
+  // Use PR title as fallback description if body is empty
+  const description = body.trim() || title.trim();
+
   // Store the complete title in the changeset
   const changesetPath = await createChangeset({
     title: title.trim(),
@@ -164,7 +167,7 @@ async function generateChangeset() {
     type: title.split(':')[0].trim(),
     breaking,
     branch,
-    description: body
+    description
   });
 
   console.log(`Changeset created: ${changesetPath}`);
