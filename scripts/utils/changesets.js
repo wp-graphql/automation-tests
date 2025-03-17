@@ -88,8 +88,8 @@ async function readAllChangesets(options = {}) {
       const filePath = path.join(changesetDir, file);
       const content = await fs.readFile(filePath, 'utf8');
       
-      // Parse the changeset content
-      const changeset = parseChangeset(content);
+      // Parse the changeset content (fixed function name)
+      const changeset = parseChangesetContent(content);
       
       // Add the filename to the changeset
       changeset.filename = file;
@@ -123,16 +123,31 @@ async function readAllChangesets(options = {}) {
  * Read and parse a changeset file
  * @param {string} content The content of the changeset file
  * @returns {Object} Parsed changeset data
+ * @throws {Error} If the content is invalid or missing required fields
  */
 function parseChangesetContent(content) {
+  if (!content) {
+    throw new Error('Changeset content cannot be empty');
+  }
+
   const lines = content.split('\n');
   const changeset = {};
   
   let inFrontmatter = false;
+  let hasFrontmatterStart = false;
+  let hasFrontmatterEnd = false;
+  
   for (const line of lines) {
     if (line.trim() === '---') {
-      inFrontmatter = !inFrontmatter;
-      continue;
+      if (!hasFrontmatterStart) {
+        hasFrontmatterStart = true;
+        inFrontmatter = true;
+        continue;
+      } else {
+        hasFrontmatterEnd = true;
+        inFrontmatter = false;
+        continue;
+      }
     }
     
     if (inFrontmatter) {
@@ -143,6 +158,18 @@ function parseChangesetContent(content) {
         changeset[key.trim()] = value;
       }
     }
+  }
+
+  // Validate required fields
+  const requiredFields = ['title', 'pr', 'author', 'type'];
+  const missingFields = requiredFields.filter(field => !changeset[field]);
+  
+  if (missingFields.length > 0) {
+    throw new Error(`Changeset is missing required fields: ${missingFields.join(', ')}`);
+  }
+
+  if (!hasFrontmatterStart || !hasFrontmatterEnd) {
+    throw new Error('Invalid changeset format: Missing frontmatter delimiters (---)');
   }
   
   return changeset;
