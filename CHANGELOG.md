@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## v4.0.6 - 2025-03-17
+
+### New Features
+
+- feat: a scalar ([#72](https://github.com/jasonbahl/automation-tests/pull/72))
+- 'feat: time scalar' ([#70](https://github.com/jasonbahl/automation-tests/pull/70))
+
 ## v4.0.5 - 2025-03-15
 
 > ⚠️ **BREAKING CHANGES**: This release contains breaking changes. Please review before upgrading.
