@@ -66,8 +66,8 @@ This plugin is a testing ground for GitHub Actions workflows before implementing
 
 **New Features**
 
-* feat: a scalar (https://github.com/jasonbahl/automation-tests/pull/72)
-* 'feat: time scalar' (https://github.com/jasonbahl/automation-tests/pull/70)
+* feat: c-scalar (https://github.com/jasonbahl/automation-tests/pull/74)
+* feat: b-scalar (https://github.com/jasonbahl/automation-tests/pull/73)
 
 = 4.0.5 =
 

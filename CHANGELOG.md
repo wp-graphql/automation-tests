@@ -6,8 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### New Features
 
-- feat: a scalar ([#72](https://github.com/jasonbahl/automation-tests/pull/72))
-- 'feat: time scalar' ([#70](https://github.com/jasonbahl/automation-tests/pull/70))
+- feat: c-scalar ([#74](https://github.com/jasonbahl/automation-tests/pull/74))
+- feat: b-scalar ([#73](https://github.com/jasonbahl/automation-tests/pull/73))
 
 ## v4.0.5 - 2025-03-15
 
