@@ -3,7 +3,7 @@ Contributors: jasonbahl
 Tags: testing, automation
 Requires at least: 5.0
 Tested up to: 6.2
-Stable tag: 4.0.5
+Stable tag: 4.0.6
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -26,14 +26,6 @@ This is a test repository for experimenting with GitHub Workflows for WordPress 
 This plugin is a testing ground for GitHub Actions workflows before implementing them in production repositories.
 
 == Upgrade Notice ==
-
-= 4.0.5 =
-
-**⚠️ BREAKING CHANGES**: This release contains breaking changes that may require updates to your code.
-
-* 'feat!: breaking change' (https://github.com/jasonbahl/automation-tests/pull/61)
-
-Please review these changes before upgrading.
 
 = 0.2.1 =
 
@@ -70,21 +62,20 @@ Please review these changes before upgrading.
 
 == Changelog ==
 
-= 4.0.5 =
-
-**⚠️ BREAKING CHANGES**: This release contains breaking changes. Please review before upgrading.
-
-**Breaking Changes**
-
-* 'feat!: breaking change' (https://github.com/jasonbahl/automation-tests/pull/61)
+= 4.0.6 =
 
 **New Features**
 
-* 'feat: url scalar' (https://github.com/jasonbahl/automation-tests/pull/67)
-* 'feat: date scalar' (https://github.com/jasonbahl/automation-tests/pull/65)
-* 'feat: datetime-scalar' (https://github.com/jasonbahl/automation-tests/pull/62)
-* 'feat: phone scalar' (https://github.com/jasonbahl/automation-tests/pull/60)
-* 'feat: email scalar' (https://github.com/jasonbahl/automation-tests/pull/59)
+* feat: a scalar (https://github.com/jasonbahl/automation-tests/pull/72)
+* 'feat: time scalar' (https://github.com/jasonbahl/automation-tests/pull/70)
+
+= 4.0.5 =
+
+**⚠️ BREAKING CHANGES**: This release contains breaking changes that may require updates to your code.
+
+* 'feat!: breaking change' (https://github.com/jasonbahl/automation-tests/pull/61)
+
+Please review these changes before upgrading.
 
 = 4.0.4 =
 
