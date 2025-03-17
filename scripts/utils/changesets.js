@@ -89,7 +89,7 @@ async function readAllChangesets(options = {}) {
       const content = await fs.readFile(filePath, 'utf8');
       
       // Parse the changeset content
-      const changeset = parseChangesetContent(content);
+      const changeset = parseChangeset(content);
       
       // Add the filename to the changeset
       changeset.filename = file;
@@ -109,7 +109,7 @@ async function readAllChangesets(options = {}) {
       );
     }
     
-    // Otherwise, filter by the specified branch
+    // Otherwise, use the original filtering logic
     return changesets.filter(changeset => 
       !changeset.branch || // Include changesets without branch info
       changeset.branch === branch
@@ -296,5 +296,6 @@ module.exports = {
   determineBumpType,
   categorizeChangesets,
   createChangeset,
-  deleteAllChangesets
+  deleteAllChangesets,
+  parseChangesetContent
 }; 
