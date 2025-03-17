@@ -7,7 +7,8 @@ This directory contains GitHub Workflows used to automate various tasks for Word
 | Workflow | Status | Description |
 |----------|--------|-------------|
 | [Semantic PR Titles](./semantic-pr-titles.yml) | ✅ Implemented | Ensures pull request titles follow semantic conventions |
-| [Changeset Generation](./generate-changeset.yml) | ✅ Implemented | Generates changesets when PRs are merged to develop |
+| [Generate Changeset](./generate-changeset.yml) | ✅ Implemented | Generates changesets for PRs merged to develop or milestone branches |
+| [Milestone Merge](./milestone-merge.yml) | ✅ Implemented | Handles milestone branches being merged to develop |
 | [Release Management](./release-management.yml) | ✅ Implemented | Collects changesets and prepares releases |
 | [Create Tag](./create-tag.yml) | ✅ Implemented | Creates a tag when a release PR is merged to main |
 | [Deploy](./deploy.yml) | ✅ Implemented | Deploys plugin to WordPress.org and creates GitHub release |
@@ -19,18 +20,32 @@ This directory contains GitHub Workflows used to automate various tasks for Word
 - **Purpose**: Ensures PR titles follow semantic conventions (feat, fix, etc.)
 - **Status**: ✅ Implemented
 
-### Changeset Generation
-- **Trigger**: When a PR is merged to develop
+### Generate Changeset
+- **Trigger**: When a PR is merged to develop or a milestone branch
 - **Purpose**: Generates a changeset file with PR details
 - **Requirements**:
   - [x] Detect merged PRs
   - [x] Extract PR title, description, and metadata
   - [x] Generate changeset file in a specified format
-  - [x] Commit changeset to develop branch
+  - [x] Commit changeset to appropriate branch
+  - [x] Update appropriate PR (release or milestone)
 - **Error Handling**:
   - Validates input parameters before processing
   - Provides clear error messages for missing or invalid inputs
   - Uses environment variables with fallbacks for configuration
+
+### Milestone Merge
+- **Trigger**: When a milestone branch PR is merged to develop
+- **Purpose**: Updates release PR with milestone changes
+- **Requirements**:
+  - [x] Detect milestone branch merges
+  - [x] Use existing changesets from milestone branch
+  - [x] Update release PR with milestone changes
+  - [x] Maintain milestone context in release notes
+- **Error Handling**:
+  - Validates milestone branch format
+  - Ensures proper handling of existing changesets
+  - Provides clear status messages for each operation
 
 ### Release Management
 - **Trigger**: Manual or scheduled

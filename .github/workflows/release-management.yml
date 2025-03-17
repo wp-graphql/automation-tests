@@ -338,7 +338,8 @@ jobs:
           fi
           
       - name: Delete processed changesets
-        if: github.event_name == 'pull_request_target'
+        # Only run this step when merging from develop to main (actual release)
+        if: github.event_name == 'pull_request_target' && github.event.pull_request.head.ref == 'develop' && github.event.pull_request.base.ref == 'main'
         run: |
           # Configure Git
           git config --global user.name "GitHub Actions"
@@ -351,16 +352,12 @@ jobs:
             ls -la .changesets/
             
             # Remove all .md files in the .changesets directory
-            find .changesets -type f -name "*.md" -exec rm -f {} \;
-            
-            # Check if any files were removed
-            if [ $? -eq 0 ]; then
-              echo "Changesets removed successfully"
+            # but only if we're doing an actual release
+            if [[ "${{ github.event.pull_request.head.ref }}" == "develop" && "${{ github.event.pull_request.base.ref }}" == "main" ]]; then
+              find .changesets -type f -name "*.md" -exec rm -f {} \;
               
               # Stage the deletions
               git add -A .changesets/
-              
-              # No need to reset release_notes.md since we're not creating it in the workspace
               
               # Commit the deleted changesets
               git commit -m "chore: delete changesets after release v${{ steps.version_bump.outputs.version }}"
@@ -368,8 +365,7 @@ jobs:
               
               echo "Deleted changesets for v${{ steps.version_bump.outputs.version }}"
             else
-              echo "Error removing changesets"
-              exit 1
+              echo "Skipping changeset deletion - not a release to main"
             fi
           else
             echo "No .changesets directory found"

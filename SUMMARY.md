@@ -97,4 +97,14 @@
   - Updated `analyze-changesets.js` to use `readAllChangesets`, `determineBumpType`, and `categorizeChangesets` functions
   - Updated `generate-release-notes.js` to use changeset utility functions
   - This reduces code duplication and ensures consistent behavior across scripts
-- **Documentation Updates**: Comprehensive documentation updates to reflect new features and options. 
+- **Documentation Updates**: Comprehensive documentation updates to reflect new features and options.
+- **Enhanced Milestone Utilities**: Added new `utils/milestones.js` module for milestone-specific operations:
+  - Provides utilities for milestone branch identification and management
+  - Enables better tracking of changes from milestone branches
+  - Improves release note generation with milestone context
+  - Centralizes milestone-related logic for better maintainability
+- **Release Notes Enhancement**: Updated release notes generation to:
+  - Show which milestone each change belongs to
+  - Provide better context for milestone-related changes
+  - Make it easier to track progress of milestone features
+  - Maintain clear separation between milestone and non-milestone changes 

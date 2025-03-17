@@ -235,29 +235,6 @@ function updateChangelog(newContent, version) {
 }
 
 /**
- * Move processed changesets to archive directory
- */
-function archiveChangesets() {
-  const changesetDir = path.join(process.cwd(), '.changesets');
-  const archiveDir = path.join(changesetDir, 'archive');
-  
-  if (!fs.existsSync(archiveDir)) {
-    fs.mkdirSync(archiveDir, { recursive: true });
-  }
-  
-  const changesetFiles = glob.sync('*.md', { cwd: changesetDir });
-  
-  changesetFiles.forEach(file => {
-    const sourcePath = path.join(changesetDir, file);
-    const destPath = path.join(archiveDir, file);
-    
-    fs.moveSync(sourcePath, destPath, { overwrite: true });
-  });
-  
-  console.log(`Moved ${changesetFiles.length} changesets to archive directory`);
-}
-
-/**
  * Update changelog based on changesets
  */
 function updateChangelogFromChangesets() {
@@ -274,7 +251,6 @@ function updateChangelogFromChangesets() {
     const changelogContent = generateChangelogContent(groupedChangesets, version);
     
     updateChangelog(changelogContent, version);
-    archiveChangesets();
     
     console.log('Changelog update complete!');
   } catch (err) {

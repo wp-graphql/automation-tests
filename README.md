@@ -631,5 +631,19 @@ We've made several significant improvements to the changeset generation workflow
 - Automatic addition of breaking changes to the upgrade notice section
 - Comprehensive documentation updates
 
+### 5. Enhanced Milestone Branch Support
+- Added dedicated utilities for milestone branch operations in `utils/milestones.js`
+  - Functions for identifying milestone branches
+  - Utilities for extracting milestone names
+  - Helpers for managing milestone-specific changesets
+- Enhanced release notes to show milestone context
+  - Changes from milestone branches are clearly marked
+  - Each change shows which milestone it belongs to
+  - Helps track feature progress across multiple PRs
+- Improved milestone branch detection and handling
+  - Better separation of milestone vs non-milestone logic
+  - Clearer tracking of changes from milestone branches
+  - Enhanced documentation of milestone workflows
+
 These improvements make the changeset generation process more reliable, user-friendly, and informative, enhancing the overall development workflow. 
 
