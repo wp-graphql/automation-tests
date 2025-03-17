@@ -24,6 +24,7 @@ add_action( 'admin_notices', function() {
 // - Date
 // - Time
 // - URL
+// - A-Scalar
 
 // BREAKING CHANGE
 // We're simulating a breaking change with this comment.
